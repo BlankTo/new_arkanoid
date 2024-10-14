@@ -33,6 +33,10 @@ print('\n-------------------------------------\nevent pool:\n')
 print(list(event_pool.values()))
 print('\n-------------------------------------')
 
+#for i in range(4):
+#    print(events_per_frame[i])
+#exit()
+
 
 # initialize evolution
 
@@ -40,7 +44,7 @@ evo = EvolutionaryAlgorithm(elements, events_per_frame, list(event_pool.values()
 
 # run evolution
 
-evo.run(100, 1000)
+evo.run(1000, 100)
 
 # evaluate results
 

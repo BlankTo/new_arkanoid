@@ -7,7 +7,7 @@ def fitness(individual, events_per_frame):
 
     score = 0
 
-    element_pool = individual.get_element_pool()
+    #element_pool = individual.get_element_pool()
 
     for frame_id in range(len(events_per_frame) - 1):
 
@@ -21,10 +21,10 @@ def fitness(individual, events_per_frame):
 
             for pred in predictions:
 
-                category = pred['category']
+                #category = pred['category']
                 predicted_events = pred['predicted_events']
 
-                if True: #len(predicted_events) > 0:
+                if len(predicted_events) > 0:
 
                     #print('---------------------------------------------------------------------')
                     #print(f'cat_id: {category.id}')
@@ -53,9 +53,9 @@ def fitness(individual, events_per_frame):
                             #print(f'wrong: {(predicted_event.event_type, predicted_event.subject)}')
                             n_wrong_predictions += 1
 
-                    score += n_correct_predictions * 100 - n_wrong_predictions * 1000# - (len(next_frame_events) - n_correct_predictions) * 100
+                    score += n_correct_predictions * 10 - n_wrong_predictions * 100# - (len(next_frame_events) - n_correct_predictions) * 1
                 
-                else: score -= len(next_frame_events) * 100
+                #else: score -= len(next_frame_events) * 1
 
     score -= individual.get_fitness_adjustments() * 1
 
@@ -63,6 +63,7 @@ def fitness(individual, events_per_frame):
 
 
 def selection(population, num_selected):
+    print([p.get_fitness() for p in sorted(population, key=lambda ind: ind.get_fitness(), reverse=True)[:num_selected]])
     return sorted(population, key=lambda ind: ind.get_fitness(), reverse=True)[:num_selected]
 
 
@@ -120,7 +121,8 @@ class EvolutionaryAlgorithm:
             offspring = []
 
             # add the survivors directly or not?
-            offspring.extend(survivors)
+            #offspring.extend(survivors)
+            offspring.extend(survivors[0])
 
             while len(offspring) < len(self.population):
 
