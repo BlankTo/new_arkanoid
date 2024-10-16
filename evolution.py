@@ -3,9 +3,18 @@ import time
 import random
 from classes import ID_creator, Individual
 
+def format_time(time_in_sec):
+    hours, remainder = divmod(time_in_sec, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours > 0: return f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
+    elif minutes > 0: return f"{int(minutes)}m {int(seconds)}s"
+    else: return f"{int(seconds)}s"
+
 def fitness(individual, events_per_frame):
 
     score = 0
+
+    individual.reset_rule_usage()
 
     #element_pool = individual.get_element_pool()
 
@@ -47,13 +56,13 @@ def fitness(individual, events_per_frame):
                                 break
 
                         if correct:
-                            #print(f'correct: {(predicted_event.event_type, predicted_event.subject)}')
+                            #print(f'correct: {[(e.event_type, e.subject) for e in events]} -> {(predicted_event.event_type, predicted_event.subject)}')
                             n_correct_predictions += 1
                         else:
-                            #print(f'wrong: {(predicted_event.event_type, predicted_event.subject)}')
+                            #print(f'wrong: {[(e.event_type, e.subject) for e in events]} -> {(predicted_event.event_type, predicted_event.subject)}')
                             n_wrong_predictions += 1
 
-                    score += n_correct_predictions * 10 - n_wrong_predictions * 100# - (len(next_frame_events) - n_correct_predictions) * 1
+                    score += n_correct_predictions * 1000 - n_wrong_predictions * 10000# - (len(next_frame_events) - n_correct_predictions) * 1
                 
                 #else: score -= len(next_frame_events) * 1
 
@@ -63,7 +72,6 @@ def fitness(individual, events_per_frame):
 
 
 def selection(population, num_selected):
-    print([p.get_fitness() for p in sorted(population, key=lambda ind: ind.get_fitness(), reverse=True)[:num_selected]])
     return sorted(population, key=lambda ind: ind.get_fitness(), reverse=True)[:num_selected]
 
 
@@ -102,6 +110,12 @@ class EvolutionaryAlgorithm:
         starting_time = time.time()
 
         for gen_id in range(max_generations):
+
+            if gen_id > 0:
+                eta = ((time.time() - starting_time) / gen_id) * (max_generations - gen_id)
+                print(f"\r{gen_id}/{max_generations} - eta: {format_time(eta)}                  ", end= '')
+            else:
+                print(f"{gen_id}/{max_generations}", end= '')
             #print(f'generation {gen_id}')
 
             # Evaluation
@@ -113,8 +127,9 @@ class EvolutionaryAlgorithm:
             best_fitness = self.get_winner().get_fitness()
             if best_fitness > self.old_best:
                 self.old_best = best_fitness
-                print(f'generation {gen_id}')
-                print(f'new best fitness: {best_fitness}')
+                print(f'\rgeneration {gen_id}                                   ', end= '')
+                print(f'\nnew best fitness: {best_fitness}')
+                print(f"\n{gen_id}/{max_generations}                      ", end= '')
                 #print(f'eta: {((time.time() - starting_time) / (gen_id + 1)) * (max_generations - gen_id)}')
 
             # Crossover and Mutation
@@ -122,7 +137,10 @@ class EvolutionaryAlgorithm:
 
             # add the survivors directly or not?
             #offspring.extend(survivors)
-            offspring.extend(survivors[0])
+            offspring.append(survivors[0])
+
+            for survivor in survivors:
+                offspring.append(survivor.mutate())
 
             while len(offspring) < len(self.population):
 
@@ -139,6 +157,9 @@ class EvolutionaryAlgorithm:
                 self.population = offspring
 
             # TODO add termination conditions
+
+        print(f"\rTotal run time: {format_time(time.time() - starting_time)}", end= '')
+        print('\n-------------------------------------------')
 
     def get_winner(self):
         return sorted(self.population, key= lambda ind: ind.get_fitness(), reverse= True)[0]

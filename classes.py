@@ -38,24 +38,8 @@ class Object:
         self.elements = random.sample(element_pool, random.randint(1, len(element_pool)))
         return self
 
-#    def mutate_old(self, element_pool):
-#
-#        elements = deepcopy(self.elements)
-#
-#        if len(elements) > 1:
-#
-#            if len(elements) < len(element_pool) and random.random() > 0.5:
-#                remaining_elements = [element for element in element_pool if element.id not in elements]
-#                elements.append(random.choice(remaining_elements))  # Add an element
-#
-#            else:
-#                elements.remove(random.choice(list(elements)))  # Remove an element
-#
-#        else:
-#            remaining_elements = [element for element in element_pool if element.id not in elements]
-#            elements.append(random.choice(remaining_elements))  # Add an element
-#
-#        return Object(self.id, params= True, elements= elements)
+    def __repr__(self):
+        return f'object_{self.id}'
 
     def mutate(self, new_id, element_pool):
 
@@ -93,20 +77,25 @@ class Category:
             self.objects = objects
             self.triggers = triggers
             self.effects = effects
+            n_elements = len(self.get_elements())
+            self.rule_usage = [[False for _ in range(n_elements)] for _ in range(len(self.triggers))]
 
     def randomize(self, object_pool, event_pool):
         self.objects = random.sample(object_pool, random.randint(1, len(object_pool)))
         
         all_pairs = list(itertools.combinations(event_pool, 2))
-        chosen_pairs = random.sample(all_pairs, random.randint(1, len(all_pairs)))
+        chosen_pairs = random.sample(all_pairs, random.randint(0, len(all_pairs)))
 
         triggers = []
         effects = []
         for trigger, effect in chosen_pairs:
             triggers.append(trigger)
             effects.append(effect)
+        
         self.triggers = triggers
         self.effects = effects
+        n_elements = len(self.get_elements())
+        self.rule_usage = [[False for _ in range(n_elements)] for _ in range(len(self.triggers))]
 
         return self
 
@@ -147,12 +136,14 @@ class Category:
 
         objects, triggers, effects = deepcopy(self.objects), deepcopy(self.triggers), deepcopy(self.effects)
 
-        mutate_what = ['mutate_rule']
+        mutate_what = []
 
         if len(objects) < len(object_pool): mutate_what.append('add_obj')
         if len(objects) > 1: mutate_what.append('remove_obj')
         if len(triggers) < pow(len(event_pool), 2): mutate_what.append('create_rule')
-        if len(triggers) > 1: mutate_what.append('delete_rule')
+        if len(triggers) > 0:
+            mutate_what.append('mutate_rule')
+            mutate_what.append('delete_rule')
 
         mutate_what = random.choice(mutate_what)
 
@@ -162,9 +153,15 @@ class Category:
                 objects.append(random.choice(object_pool))  # Add an object
 
             case 'create_rule':
-                existing_rules = zip(triggers, effects)
-                possible_rules = [rule for rule in list(itertools.combinations(event_pool, 2)) if rule not in existing_rules]
+                existing_rules = [(t, e) for t, e in zip(triggers, effects)]
+                possible_rules = [rule for rule in list(itertools.product(event_pool, event_pool)) if rule not in existing_rules]
                 new_rule = random.choice(possible_rules)
+                #print('\ncreate_rule')
+                #print(len(triggers))
+                #print(existing_rules)
+                #print(possible_rules)
+                #print(f'new_rule: {new_rule}')
+                #print('-----------\n')
                 triggers.append(new_rule[0])
                 effects.append(new_rule[1])
 
@@ -174,7 +171,7 @@ class Category:
                     ok = True
 
                     to_modify = random.randint(0, len(triggers) - 1)
-                    existing_rules = zip(triggers, effects)
+                    existing_rules = [(t, e) for t, e in zip(triggers, effects)]
                     possible_triggers = [trigger for trigger in event_pool if (trigger, effects[to_modify]) not in existing_rules]
                     possible_effects = [effect for effect in event_pool if (triggers[to_modify], effect) not in existing_rules]
 
@@ -187,6 +184,15 @@ class Category:
                     elif possible_effects: effects[to_modify] = random.choice(possible_effects)
 
                     else: ok = False
+
+                    #print('\nmutate_rule')
+                    #print(existing_rules)
+                    #print(f'rule_to_modify: {existing_rules[to_modify]}')
+                    #print(f'event_pool: {event_pool}')
+                    #print(f'possible_triggers: {possible_triggers}')
+                    #print(f'possible_effects: {possible_effects}')
+                    #print(f'modified_rule: {(self.triggers[to_modify], self.effects[to_modify])}')
+                    #print('-----------\n')
 
             case 'remove_obj':
                 objects.remove(random.choice(objects))  # Remove an object
@@ -215,40 +221,50 @@ class Category:
         elements = []
         for obj in self.objects:
             elements.extend(obj.get_elements())
-        return set(elements)
+        return list(set(elements))
     
     def get_objects(self): return self.objects
     
     def get_rules(self): return self.triggers, self.effects
 
-    def get_fitness_adjustments(self):
+    def reset_rule_usage(self):
+        n_elements = len(self.get_elements())
+        self.rule_usage = [[False for _ in range(n_elements)] for _ in range(len(self.triggers))]
+        #self.rule_usage = [False for _ in range(len(self.triggers))]
 
-        fitness_adjustment = 0
-        elements_in_objects = {}
-
-        fitness_adjustment += len(self.objects) # penalty for too many objects in a category
-
-        for object in self.objects:
-            elements = object.get_elements()
-
-            fitness_adjustment += len(elements) # penalty for too many elements in an object
-
-            for element in elements:
-                if element in elements_in_objects.keys():
-                    elements_in_objects[element] += 1
-                else:
-                    elements_in_objects[element] = 1
+    def predict(self, events):
             
-        for element_repetitions in elements_in_objects.values():
+        predicted_events = []
+        for event in events:
 
-            if element_repetitions > 1:
-                fitness_adjustment += pow(element_repetitions - 1, 3) # penalty for same element in different objects
+            if event.subject in self.get_elements():
 
-            elif element_repetitions == 0:
-                #fitness_adjustment += 1 # penalty for element not present in any object
-                pass
+                if event.event_type.description in self.triggers:
 
-        return fitness_adjustment
+                    for i, (trigger, effect) in enumerate(zip(self.triggers, self.effects)):
+
+                        if event.event_type.description == trigger:
+
+                            predicted_events.append(Predicted_Event(effect, event.subject))
+
+                            elements = self.get_elements()
+                            element_idx = -1
+                            for e_i, e_id in enumerate(elements):
+                                if e_id == event.subject:
+                                    element_idx = e_i
+                                    break
+                            self.rule_usage[i][element_idx] = True # rule is used on element
+        
+        return predicted_events
+
+    def get_rule_usage(self):
+        return self.rule_usage
+    
+    def check_obj_and_mutate(self, obj_to_mutate_id, new_obj):
+        for i, obj in enumerate(self.objects):
+            if obj.id == obj_to_mutate_id:
+                self.objects[i] = new_obj
+                break
 
 class EventType:
     def __init__(self, description):
@@ -314,48 +330,6 @@ class Individual:
 
         return self
 
-#    def mutate_old(self):
-#
-#        objects, categories = deepcopy(self.objects), deepcopy(self.categories)
-#
-#        mutate_what = random.randint(0, 3)
-#        mutate_what = 1
-#
-#        if mutate_what == 0:
-#            # Mutate Objects
-#            random.choice(objects).mutate(self.element_pool)
-#
-#        if mutate_what == 1:
-#            # Addition/Removal of objects
-#            if random.random() > 0.5:
-#                if len(objects) > 1:
-#                    if random.random() > 0.5:
-#                        new_object = Object(self.gen_obj_id()).randomize(self.element_pool)
-#                        objects.append(new_object) # Add a new Object
-#                        add_to = random.sample(categories, random.randint(1, len(categories))) # adding the object to one or more categories, as just creating it would result in a fixed reduction of fitness
-#                        for cat in add_to:
-#                            cat.add_object(new_object)
-#                    else:
-#                        removed = objects.pop(random.randint(0, len(objects) - 1))  # Remove an object
-#                        for cat in categories:
-#                            cat.remove_object(removed)
-#
-#                else:
-#                    objects.append(Object(self.gen_obj_id()).randomize(self.element_pool)) # Add a new Object
-#
-#        if mutate_what == 2:
-#            # Mutate Categories
-#            random.choice(categories).mutate(objects, self.event_pool)
-#
-#        if mutate_what == 3:
-#            # Addition/Removal of categories
-#            if random.random() > 0.5:
-#                if random.random() > 0.5 and len(categories) > 1:
-#                    categories.pop(random.randint(0, len(categories) - 1))  # Remove a random category
-#                else:
-#                    categories.append(Category(self.gen_cat_id()).randomize(objects, self.event_pool)) # Add a new Category
-#
-#        return Individual(self.gen_obj_id, self.gen_cat_id, params= True, element_pool= self.element_pool, event_pool= self.event_pool, objects= objects, categories= categories)
 
     def mutate(self):
 
@@ -374,17 +348,24 @@ class Individual:
                 categories.append(Category(self.gen_cat_id()).randomize(objects, self.event_pool)) # Create a new Category
 
             case 'create_obj':
-                new_object = Object(self.gen_obj_id()).randomize(self.element_pool)
-                objects.append(new_object) # Create a new Object
+                new_object = Object(self.gen_obj_id()).randomize(self.element_pool) # Create a new Object
+                objects.append(new_object)
                 add_to = random.sample(categories, random.randint(1, len(categories))) # adding the object to one or more categories, as just creating it would result in a fixed reduction of fitness
                 for cat in add_to:
                     cat.add_object(new_object)
 
             case 'mutate_cat':
-                random.choice(categories).mutate(self.gen_cat_id(), self.objects, self.event_pool)
+                cat_to_mutate = random.choice(categories)
+                categories.remove(cat_to_mutate)
+                categories.append(cat_to_mutate.mutate(self.gen_cat_id(), self.objects, self.event_pool))
 
             case 'mutate_obj':
-                random.choice(objects).mutate(self.gen_obj_id(), self.element_pool)
+                obj_to_mutate = random.choice(objects)
+                objects.remove(obj_to_mutate)
+                new_object = obj_to_mutate.mutate(self.gen_obj_id(), self.element_pool)
+                objects.append(new_object)
+                for cat in categories:
+                    cat.check_obj_and_mutate(obj_to_mutate.id, new_object)
 
             case 'delete_cat':
                 categories.pop(random.randint(0, len(categories) - 1))  # Delete a random category
@@ -407,23 +388,12 @@ class Individual:
     def predict(self, events):
 
         predictions = []
-        for category in self.categories:
+        for cat in self.categories:
 
-            elements_in_category = category.get_elements()
-            
-            predicted_events = []
-            for event in events:
-
-                if event.subject in elements_in_category:
-
-                    if event.event_type.description in category.triggers:
-                        for trigger, effect in zip(category.triggers, category.effects):
-                            if event.event_type.description == trigger:
-                                predicted_events.append(Predicted_Event(effect, event.subject))
-                        #predicted_events.append(Predicted_Event(category.rules[event.event_type.description], event.subject))
+            predicted_events = cat.predict(events)
 
             predictions.append({
-                'category': category,
+                'category': cat,
                 'predicted_events': predicted_events,
             })
 
@@ -435,22 +405,56 @@ class Individual:
 
     def print_rules(self):
         for category in self.categories:
-            print(f'category {category.id}')
-            print(f'with inside: {[self.element_pool[i].description for i in range(len(self.element_pool)) if self.element_pool[i].id in category.get_elements()]}')
+            print(f'category {category.id}:\n')
+            print(f'composed of:\n')
+            for obj in category.objects:
+                print(f'{obj}: {[self.element_pool[i].description for i in range(len(self.element_pool)) if self.element_pool[i].id in obj.get_elements()]}\n')
+            print(f'all elements in cat (all objects): {[self.element_pool[i].description for i in range(len(self.element_pool)) if self.element_pool[i].id in category.get_elements()]}')
+            print(f'n_rules: {len(category.triggers)}')
             print('rules:')
             for trigger, effect in zip(category.triggers, category.effects):
                 print(f'{trigger} -> {effect}')
+            print('--------------------------------------------------')
 
     def get_element_pool(self): return self.element_pool
+
+    def reset_rule_usage(self):
+        for cat in self.categories: cat.reset_rule_usage()
 
     def get_fitness_adjustments(self):
 
         fitness_adjustment = 0
         objects_in_categories = {}
+        elements_in_objects = {}
+
+        for object in self.objects:
+
+            elements = object.get_elements()
+            
+            #fitness_adjustment += len(elements) # penalty for too many elements in an object
+
+            for element in elements:
+                if element in elements_in_objects.keys():
+                    elements_in_objects[element] += 1
+                else:
+                    elements_in_objects[element] = 1
+            
+        for element_repetitions in elements_in_objects.values():
+
+            if element_repetitions > 1:
+                fitness_adjustment += pow(element_repetitions - 1, 3) # penalty for same element in different objects
+
+            elif element_repetitions == 0:
+                fitness_adjustment += 100000 # penalty for element not present in any object
+                pass
+
 
         for category in self.categories:
-            fitness_adjustment += category.get_fitness_adjustments() # get fitness penalty for each category
             objects = category.get_objects()
+            
+            fitness_adjustment += len(objects) # penalty for too many objects in a category
+
+            fitness_adjustment += list(itertools.chain.from_iterable(category.get_rule_usage())).count(False) * 1000 # penalty for each element to with a rule is never applied
 
             for object in objects:
 
@@ -462,10 +466,10 @@ class Individual:
         for object_repetitions in objects_in_categories.values():
 
             if object_repetitions > 1:
-                fitness_adjustment += pow(object_repetitions - 1, 4) # penalty for objects repeated in many categories
+                fitness_adjustment += pow(object_repetitions - 1, 5) # penalty for objects repeated in many categories
 
             elif object_repetitions == 0:
-                fitness_adjustment += 10 # penalty for object not present in any category
+                fitness_adjustment += 100000 # penalty for object not present in any category
 
         fitness_adjustment += pow(len(self.categories), 3) # penalty for too many categories
 

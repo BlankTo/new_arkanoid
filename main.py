@@ -6,7 +6,7 @@ from evolution import EvolutionaryAlgorithm
 
 # retrieve log and create pools
 
-with open('logs/log__11_10_2024_01_12_57.pkl', 'rb') as log_file:
+with open('logs/arkanoid_logs/arkanoid_log__11_10_2024_01_12_57.pkl', 'rb') as log_file:
     log = pickle.load(log_file)
 
 events_per_frame = []
@@ -49,5 +49,6 @@ evo.run(1000, 100)
 # evaluate results
 
 winner = evo.get_winner()
-print(winner.get_fitness())
+print(f'best_fitness: {winner.get_fitness()}')
+print('\ncategories:\n')
 winner.print_rules()
