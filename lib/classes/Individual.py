@@ -1,6 +1,4 @@
 import random
-import itertools
-import numpy as np
 
 from .Category import Category
 from .Element import Element
@@ -12,20 +10,20 @@ from ..utils import ID_creator
 
 class Individual:
 
-    def __init__(self, element_pool, event_pool, original: 'Individual' = None):
+    def __init__(self, element_pool: list[Element], event_pool: list[Event], original: 'Individual' = None):
         
         self._element_pool = element_pool
         self._event_pool = event_pool
 
         if original is None:
 
-            self.gen_obj_id = ID_creator().get_id
-            self.gen_rule_id = ID_creator().get_id
-            self.gen_cat_id = ID_creator().get_id
+            self.gen_obj_id: Callable[[], int] = ID_creator().get_id
+            self.gen_rule_id: Callable[[], int] = ID_creator().get_id
+            self.gen_cat_id: Callable[[], int] = ID_creator().get_id
 
-            self._objects = []
-            self._rules = []
-            self._categories = []
+            self._objects: list[Object] = []
+            self._rules: list[Rule] = []
+            self._categories: list[Category] = []
 
         else:
 
@@ -80,7 +78,7 @@ class Individual:
         out += '\n'
         return out
     
-    def get_current_ids(self):
+    def get_current_ids(self) -> tuple[int, int, int]:
         return self.gen_obj_id(), self.gen_rule_id(), self.gen_cat_id()
 
     def initialize(self, min_starting= 2, max_starting= 10) -> 'Individual':
@@ -96,7 +94,7 @@ class Individual:
         
         return self
     
-    def set_all(self, objects, rules, categories):
+    def set_all(self, objects: list[Object], rules: list[Rule], categories: list[Category]) -> 'Individual':
         self._objects = objects
         self._rules = rules
         self._categories = categories
@@ -165,12 +163,12 @@ class Individual:
                     if (random.random() > 0.5 and self._objects) or (len(self._objects) >= len(self._element_pool)):
                         new_obj = random.choice(self._objects)
                     else:
-                        new_obj = Object(self.gen_obj_id()).initialize(self.element_pool, self.objects)
+                        new_obj = Object(self.gen_obj_id()).initialize(self._element_pool, self._objects)
                         self._objects.append(new_obj)
                     if (random.random() > 0.5 and self._rules) or (len(self._rules) >= lene2):
                         new_rule = random.choice(self._rules)
                     else:
-                        new_rule = Rule(self.gen_rule_id()).initialize(self.event_pool, self._rules)
+                        new_rule = Rule(self.gen_rule_id()).initialize(self._event_pool, self._rules)
                         self._rules.append(new_rule)
                     self._categories.append(Category(self.gen_cat_id(), [new_obj], [new_rule]))
 
@@ -245,7 +243,7 @@ class Individual:
                 if (random.random() > 0.5 and self._rules) or (len(self._rules) >= lene2):
                     new_rule = random.choice(self._rules)
                 else:
-                    new_rule = Rule(self.gen_rule_id()).initialize(self.event_pool, self._rules)
+                    new_rule = Rule(self.gen_rule_id()).initialize(self._event_pool, self._rules)
                     self._rules.append(new_rule)
                 self._categories.append(Category(self.gen_cat_id(), [obj_to_move], [new_rule]))
 
@@ -258,63 +256,37 @@ class Individual:
                 random.choice(self._categories).mutate(self._objects, self._rules)
 
         return self
-
-    def predict(self, events_per_frame):
+    
+    def predict_single_frame(self, current_events: list[Event]) -> list[Event]:
 
         predicted_events = []
 
-        for cat in self._categories:
+        if current_events:
 
-            for current_events in events_per_frame:
-                if current_events:
+            for cat in self._categories:
 
-                    for current_event in current_events:
+                for current_event in current_events:
 
-                        for cat_rule in cat.rules:
-                            if cat_rule.trigger == current_event:
+                    for cat_rule in cat.rules:
+                        if cat_rule.trigger == current_event:
 
-                                for cat_obj in cat.objects:
+                            for cat_obj in cat.objects:
 
-                                    for cat_obj_elem in cat_obj.elements:
-                                        if current_event.subject == cat_obj_elem:
-                                                
-                                                predicted_events.append(Event(cat_rule.effect, current_event.subject))
-        
+                                for cat_obj_elem in cat_obj.elements:
+                                    if current_event.subject == cat_obj_elem:
+                                            
+                                            predicted_events.append(Event(cat_rule.effect, current_event.subject))
+
         return predicted_events
-    
-    def rules_in_obj(self, obj):
-        rules = []
-        for cat in self._categories:
-            if obj in cat.objects:
-                for rule in cat.rules:
-                    if rule not in rules:
-                        rules.append(rule)
-        return rules
-    
-    def rules_in_elem(self, elem):
-        rules = []
-        for cat in self._categories:
-            if elem.id in cat.get_elements_id():
-                for rule in cat.rules:
-                    if rule not in rules:
-                        rules.append(rule)
-        return rules
-    
-    def elems_id_in_rules(self, rule):
-        elems_id = []
-        for cat in self._categories:
-            if rule in cat.rules:
-                elems_id.extend(cat.get_elements_id())
-        return list(set(elems_id))
-    
-    def objs_in_rules(self, rule):
-        objs = []
-        for cat in self._categories:
-            if rule in cat.rules:
-                for obj in cat.objects:
-                    if obj not in objs:
-                        objs.append(obj)
-        return objs
+
+    def predict_all(self, events_per_frame: list[list[Event]]) -> list[list[Event]]:
+
+        predicted_events_per_frame = []
+
+        for current_events in events_per_frame:
+            predicted_events_per_frame.append(self.predict_single_frame(current_events))
+        
+        return predicted_events_per_frame
     
     def compute_fitness(self, events_per_frame: list[list[Event]], log= False) -> None: self.compute_fitness_4(events_per_frame, log)
     
@@ -537,383 +509,416 @@ class Individual:
         self._fitness = score
 
 
+#    def rules_in_obj(self, obj):
+#        rules = []
+#        for cat in self._categories:
+#            if obj in cat.objects:
+#                for rule in cat.rules:
+#                    if rule not in rules:
+#                        rules.append(rule)
+#        return rules
+#    
+#    def rules_in_elem(self, elem):
+#        rules = []
+#        for cat in self._categories:
+#            if elem.id in cat.get_elements_id():
+#                for rule in cat.rules:
+#                    if rule not in rules:
+#                        rules.append(rule)
+#        return rules
+#    
+#    def elems_id_in_rules(self, rule):
+#        elems_id = []
+#        for cat in self._categories:
+#            if rule in cat.rules:
+#                elems_id.extend(cat.get_elements_id())
+#        return list(set(elems_id))
+#    
+#    def objs_in_rules(self, rule):
+#        objs = []
+#        for cat in self._categories:
+#            if rule in cat.rules:
+#                for obj in cat.objects:
+#                    if obj not in objs:
+#                        objs.append(obj)
+#        return objs
     
-    def compute_fitness_3(self, events_per_frame: list[list[Event]], log= False) -> None:
-
-        score = 0
-
-        score -= len(self._categories) * 10
-        score -= len(self._objects)
-
-        for cat in self._categories: score -= len(cat.objects)
-        for obj in self._objects: score -= len(obj.elements)
-
-        #rule_usage_matrix = [[[[[0, 0, False] for _ in range(len(self._element_pool))] for _ in range(len(self._objects))] for _ in range(len(self._categories))] for _ in range(len(self._rules))]
-        
-        for rep in [sum([bool(obj in cat.objects) for cat in self._categories]) for obj in self._objects]:
-            if rep == 0: score -= 10
-            elif rep > 1: score -= (rep - 1)
-
-        for rep in [sum([bool(elem.id in cat.get_elements_id()) for cat in self._categories]) for elem in self._element_pool]:
-            if rep == 0: score -= 10
-            elif rep > 1: score -= (rep - 1)
-
-        for rep in [sum([bool(rule.id in cat.rules) for cat in self._categories]) for rule in self._rules]:
-            if rep > 1: score -= (rep - 1)
-        
-        #for i_rule, rule in enumerate(self._rules):
-        for rule in self._rules:
-
-            #for i_cat, cat in enumerate(self._categories):
-            for cat in self._categories:
-                if rule in cat.rules:
-
-                    #for i_obj, obj in enumerate(self._objects):
-                    for obj in self._objects:
-                        if obj in cat.objects and obj in self.objs_in_rules(rule):
-
-                            #for i_elem, elem in enumerate(self._element_pool):
-                            for elem in self._element_pool:
-                                if elem.id in self.elems_id_in_rules(rule):
-
-                                    for frame_id in range(len(events_per_frame) - 1):
-
-                                        for current_event in events_per_frame[frame_id]:
-                                            if current_event.event_type == rule.trigger and current_event.subject == elem:
-                                                
-                                                correct = False
-                                                #rule_usage_matrix[i_rule][i_cat][i_obj][i_elem][2] = True
-
-                                                for next_frame_event in events_per_frame[frame_id + 1]:
-                                                    if next_frame_event.event_type == rule.effect and next_frame_event.subject == elem:
-                                                        
-                                                        score += 1
-                                                        correct = True
-                                                        #rule_usage_matrix[i_rule][i_cat][i_obj][i_elem][0] += 1
-
-                                                    #elif next_frame_event.subject == elem: # missed rule
-
-                                                if not correct:
-
-                                                    score -= 1
-                                                    #rule_usage_matrix[i_rule][i_cat][i_obj][i_elem][1] += 1
-
-#        rule_usage_matrix = np.array(rule_usage_matrix)
-#        #print(rule_usage_matrix.shape)
+#    def compute_fitness_3(self, events_per_frame: list[list[Event]], log= False) -> None:
 #
-#        for i_cat, i_obj in itertools.product(range(len(self._categories)), range(len(self._objects))):
-#            tmp = rule_usage_matrix[:, i_cat, i_obj, :, :]
-#            if tmp.sum() != 0:
-#                rep = tmp[:, :, 2].sum()
-#                if rep == 0: score -= 10
-#                elif rep > 0: score -= (rep - 1)
-#                else:
-#                    sw = tmp[:, :, 1].sum()
-#                    if sw > 0: score -= sw
-#                    else:
-#                        sc = tmp[:, :, 0].sum()
-#                        if sc > 0: score += sc
-#                        else: score -= 10
+#        score = 0
 #
-#        for i_cat, i_elem in itertools.product(range(len(self._categories)), range(len(self._element_pool))):
-#            tmp = rule_usage_matrix[:, i_cat, :, i_elem, :]
-#            if tmp.sum() != 0:
-#                rep = tmp[:, :, 2].sum()
-#                if rep == 0: score -= 10
-#                elif rep > 0: score -= (rep - 1)
-#                else:
-#                    sw = tmp[:, :, 1].sum()
-#                    if sw > 0: score -= sw
-#                    else:
-#                        sc = tmp[:, :, 0].sum()
-#                        if sc > 0: score += sc
-#                        else: score -= 10
+#        score -= len(self._categories) * 10
+#        score -= len(self._objects)
 #
-#        for i_obj, i_rule in itertools.product(range(len(self._objects)), range(len(self._rules))):
-#            tmp = rule_usage_matrix[i_rule, :, i_obj, :, :]
-#            if tmp.sum() != 0:
-#                rep = tmp[:, :, 2].sum()
-#                if rep == 0: score -= 10
-#                elif rep > 0: score -= (rep - 1)
-#                else:
-#                    sw = tmp[:, :, 1].sum()
-#                    if sw > 0: score -= sw
-#                    else:
-#                        sc = tmp[:, :, 0].sum()
-#                        if sc > 0: score += sc
-#                        else: score -= 10
+#        for cat in self._categories: score -= len(cat.objects)
+#        for obj in self._objects: score -= len(obj.elements)
 #
-#        for i_elem, i_rule in itertools.product(range(len(self._element_pool)), range(len(self._rules))):
-#            tmp = rule_usage_matrix[i_rule, :, :, i_elem, :]
-#            if tmp.sum() != 0:
-#                rep = tmp[:, :, 2].sum()
-#                if rep == 0: score -= 10
-#                elif rep > 0: score -= (rep - 1)
+#        #rule_usage_matrix = [[[[[0, 0, False] for _ in range(len(self._element_pool))] for _ in range(len(self._objects))] for _ in range(len(self._categories))] for _ in range(len(self._rules))]
+#        
+#        for rep in [sum([bool(obj in cat.objects) for cat in self._categories]) for obj in self._objects]:
+#            if rep == 0: score -= 10
+#            elif rep > 1: score -= (rep - 1)
+#
+#        for rep in [sum([bool(elem.id in cat.get_elements_id()) for cat in self._categories]) for elem in self._element_pool]:
+#            if rep == 0: score -= 10
+#            elif rep > 1: score -= (rep - 1)
+#
+#        for rep in [sum([bool(rule.id in cat.rules) for cat in self._categories]) for rule in self._rules]:
+#            if rep > 1: score -= (rep - 1)
+#        
+#        #for i_rule, rule in enumerate(self._rules):
+#        for rule in self._rules:
+#
+#            #for i_cat, cat in enumerate(self._categories):
+#            for cat in self._categories:
+#                if rule in cat.rules:
+#
+#                    #for i_obj, obj in enumerate(self._objects):
+#                    for obj in self._objects:
+#                        if obj in cat.objects and obj in self.objs_in_rules(rule):
+#
+#                            #for i_elem, elem in enumerate(self._element_pool):
+#                            for elem in self._element_pool:
+#                                if elem.id in self.elems_id_in_rules(rule):
+#
+#                                    for frame_id in range(len(events_per_frame) - 1):
+#
+#                                        for current_event in events_per_frame[frame_id]:
+#                                            if current_event.event_type == rule.trigger and current_event.subject == elem:
+#                                                
+#                                                correct = False
+#                                                #rule_usage_matrix[i_rule][i_cat][i_obj][i_elem][2] = True
+#
+#                                                for next_frame_event in events_per_frame[frame_id + 1]:
+#                                                    if next_frame_event.event_type == rule.effect and next_frame_event.subject == elem:
+#                                                        
+#                                                        score += 1
+#                                                        correct = True
+#                                                        #rule_usage_matrix[i_rule][i_cat][i_obj][i_elem][0] += 1
+#
+#                                                    #elif next_frame_event.subject == elem: # missed rule
+#
+#                                                if not correct:
+#
+#                                                    score -= 1
+#                                                    #rule_usage_matrix[i_rule][i_cat][i_obj][i_elem][1] += 1
+#
+##        rule_usage_matrix = np.array(rule_usage_matrix)
+##        #print(rule_usage_matrix.shape)
+##
+##        for i_cat, i_obj in itertools.product(range(len(self._categories)), range(len(self._objects))):
+##            tmp = rule_usage_matrix[:, i_cat, i_obj, :, :]
+##            if tmp.sum() != 0:
+##                rep = tmp[:, :, 2].sum()
+##                if rep == 0: score -= 10
+##                elif rep > 0: score -= (rep - 1)
+##                else:
+##                    sw = tmp[:, :, 1].sum()
+##                    if sw > 0: score -= sw
+##                    else:
+##                        sc = tmp[:, :, 0].sum()
+##                        if sc > 0: score += sc
+##                        else: score -= 10
+##
+##        for i_cat, i_elem in itertools.product(range(len(self._categories)), range(len(self._element_pool))):
+##            tmp = rule_usage_matrix[:, i_cat, :, i_elem, :]
+##            if tmp.sum() != 0:
+##                rep = tmp[:, :, 2].sum()
+##                if rep == 0: score -= 10
+##                elif rep > 0: score -= (rep - 1)
+##                else:
+##                    sw = tmp[:, :, 1].sum()
+##                    if sw > 0: score -= sw
+##                    else:
+##                        sc = tmp[:, :, 0].sum()
+##                        if sc > 0: score += sc
+##                        else: score -= 10
+##
+##        for i_obj, i_rule in itertools.product(range(len(self._objects)), range(len(self._rules))):
+##            tmp = rule_usage_matrix[i_rule, :, i_obj, :, :]
+##            if tmp.sum() != 0:
+##                rep = tmp[:, :, 2].sum()
+##                if rep == 0: score -= 10
+##                elif rep > 0: score -= (rep - 1)
+##                else:
+##                    sw = tmp[:, :, 1].sum()
+##                    if sw > 0: score -= sw
+##                    else:
+##                        sc = tmp[:, :, 0].sum()
+##                        if sc > 0: score += sc
+##                        else: score -= 10
+##
+##        for i_elem, i_rule in itertools.product(range(len(self._element_pool)), range(len(self._rules))):
+##            tmp = rule_usage_matrix[i_rule, :, :, i_elem, :]
+##            if tmp.sum() != 0:
+##                rep = tmp[:, :, 2].sum()
+##                if rep == 0: score -= 10
+##                elif rep > 0: score -= (rep - 1)
+##                else:
+##                    sw = tmp[:, :, 1].sum()
+##                    if sw > 0: score -= sw
+##                    else:
+##                        sc = tmp[:, :, 0].sum()
+##                        if sc > 0: score += sc
+##                        else: score -= 10
+#        
+#        #print(self)
+#        #print(score)
+#        self._fitness = score
+#
+#        #exit()
+#
+#    
+#    def compute_fitness_2(self, events_per_frame: list[list[Event]], log= False) -> None:
+#
+#        score = 0
+#
+#        score -= len(self._rules)
+#        score -= len(self._objects)
+#        score -= len(self._categories)
+#
+#        element_repetitions_in_objects = [sum([bool(elem in obj.elements) for obj in self._objects]) for elem in self._element_pool]
+#        for erio in element_repetitions_in_objects:
+#            if erio > 1: score -= pow(erio - 1, 2)
+#
+#        object_repetitions_in_categories = [sum([bool(obj in cat.objects) for cat in self._categories]) for obj in self._objects]
+#        for oric in object_repetitions_in_categories:
+#            if oric > 1: score -= pow(oric - 1, 2)
+#
+#        element_cat_rule_usage = {elem.id: 0 for elem in self._element_pool}
+#        for cat1, cat2 in itertools.combinations(self.categories, 2):
+#            for rule1, rule2 in itertools.product(cat1.rules, cat2.rules):
+#                if rule1 == rule2:
+#                    for elem1_id, elem2_id in itertools.product(cat1.get_elements_id(), cat2.get_elements_id()):
+#                        if elem1_id == elem2_id:
+#                            element_cat_rule_usage[elem1_id] += 1
+#
+#        rule_cat_elem_repetitions = [x for x in element_cat_rule_usage.values() if x > 1]
+#
+#        for rcer in rule_cat_elem_repetitions: score -= pow(10, rcer)
+#
+#        #rules_usage = {rule.id: {'correct': 0, 'wrong': 0, 'subject_categories': [], 'subject_objects': [], 'subject_elements': []} for rule in self._rules}
+#
+#        #element_correctness_in_objects = {obj.id: {'correct': 0, 'wrong': 0, 'all_correct': 0} for obj in self._objects}
+#        #element_correctness_in_categories = {cat.id: {'correct': 0, 'wrong': 0, 'all_correct': 0} for cat in self._categories}
+#
+#        for cat in self._categories:
+#
+#            cat_is_correct = False
+#
+#            for frame_id in range(len(events_per_frame) - 1):
+#
+#                current_events = events_per_frame[frame_id]
+#
+#                if current_events:
+#
+#                    next_frame_events = events_per_frame[frame_id + 1]
+#
+#                    for current_event in current_events:
+#
+#                        for cat_rule in cat.rules:
+#                            
+#                            #cat_used = False
+#
+#                            if cat_rule.trigger == current_event:
+#
+#                                for cat_obj in cat.objects:
+#
+#                                    cat_obj_used = False
+#                                    obj_is_correct = False
+#
+#                                    for cat_obj_elem in cat_obj.elements:
+#
+#                                        if current_event.subject == cat_obj_elem:
+#
+#                                            cat_obj_used = True
+#                                                
+#                                            #if cat_obj_elem not in rules_usage[cat_rule.id]['subject_elements']:
+#                                            #    rules_usage[cat_rule.id]['subject_elements'].append(cat_obj_elem.id)
+#
+#                                            if (cat_rule.effect, current_event.subject) in next_frame_events:
+#                                                #score += 1
+#                                                cat_is_correct, obj_is_correct = True, True
+#                                                #rules_usage[cat_rule.id]['correct'] += 1
+#                                                #element_correctness_in_objects[cat_obj.id]['correct'] += 1
+#                                                #element_correctness_in_categories[cat.id]['correct'] += 1
+#                                            else:
+#                                                score -= 1
+#                                                #rules_usage[cat_rule.id]['wrong'] += 1
+#                                                #element_correctness_in_objects[cat_obj.id]['wrong'] += 1
+#                                                #element_correctness_in_categories[cat.id]['wrong'] += 1
+#
+#                                    if cat_obj_used:
+#
+#                                        #cat_used = True
+#
+#                                        #if cat_obj not in rules_usage[cat_rule.id]['subject_objects']:
+#                                        #    rules_usage[cat_rule.id]['subject_objects'].append(cat_obj.id)
+#                                            
+#
+#                                        if obj_is_correct:
+#                                            #element_correctness_in_objects[cat_obj.id]['all_correct'] += 1
+#                                            if cat.rules:
+#                                                score += len(cat_obj.elements) * 10 # 10
+#
+#                            #if cat_used:
+#                            #    if cat not in rules_usage[cat_rule.id]['subject_categories']:
+#                            #        rules_usage[cat_rule.id]['subject_categories'].append(cat.id)
+#
+#            if cat_is_correct:
+#                #element_correctness_in_categories[cat.id]['all_correct'] += 1
+#                if cat.rules:
+#                    score += len(cat.objects) # 1
+#
+#        #for ru in rules_usage.values():
+#        #    if ru['wrong'] > 0: score -= 10
+#        #    elif ru['correct'] > 0: score += 100
+#        #    else: score -= 10
+#
+#        self._fitness = score
+#        return
+#
+#        for obj in self._objects:
+#            score -= len(obj.elements)
+#
+#        for rule_usage in rules_usage.values():
+#
+#            if rule_usage['wrong'] > 0:
+#                score -= rule_usage['wrong'] * 10
+#
+#            elif rule_usage['correct'] > 0:
+#                score += 10
+#
+#            else: score -= 100
+#
+#            element_rule_repetition = {elem.id: 0 for elem in self._element_pool}
+#            for subject_element_id in rule_usage['subject_elements']:
+#                element_rule_repetition[subject_element_id] += 1
+#
+#            for elem_rep in element_rule_repetition.values():
+#                if elem_rep == 0: score -= 100
+#                elif elem_rep > 1: score -= (elem_rep - 1)
+#
+#            object_rule_repetition = {obj.id: 0 for obj in self._objects}
+#            for subject_object_id in rule_usage['subject_objects']:
+#                object_rule_repetition[subject_object_id] += 1
+#
+#            for obj_rep in object_rule_repetition.values():
+#                if obj_rep == 0: score -= 100
+#                elif obj_rep > 1: score -= (obj_rep - 1)
+#
+#            category_rule_repetition = {cat.id: 0 for cat in self._categories}
+#            for subject_category_id in rule_usage['subject_categories']:
+#                category_rule_repetition[subject_category_id] += 1
+#
+#            for cat_rep in category_rule_repetition.values():
+#                if cat_rep == 0: score -= 100
+#                elif cat_rep > 1: score -= (cat_rep - 1)
+#
+#        self._fitness = score
+#
+#    def compute_fitness_1(self, events_per_frame: list[list[Event]], log= False) -> None:
+#
+#        score = 0
+#        rule_usage = [[[-1 for _ in range(len(cat.get_elements_id()))] for _ in range(len(cat.rules))] for cat in self._categories]
+#
+#        for frame_id in range(len(events_per_frame) - 1):
+#
+#            events = events_per_frame[frame_id]
+#            next_frame_events = events_per_frame[frame_id + 1]
+#
+#            if events and next_frame_events:
+#
+#                for i_cat, cat in enumerate(self._categories):
+#
+#                    elements_id = cat.get_elements_id()
+#            
+#                    for event in events:
+#
+#                        if event.subject in elements_id:
+#
+#                            if event.event_type in cat.rules:
+#
+#                                for i, rule in enumerate(cat.rules):
+#
+#                                    trigger = rule.trigger
+#                                    effect = rule.effect
+#
+#                                    if event.event_type == trigger:
+#                                        element_idx = None
+#                                        for elem_i, elem_id in enumerate(elements_id):
+#                                            if elem_id == event.subject:
+#                                                element_idx = elem_i
+#                                                break
+#
+#                                        rule_usage[i_cat][i][element_idx] = 0 # rule is used on element
+#
+#                                        # check against next_frame_events
+#
+#                                        correct = False
+#
+#                                        for nfe in next_frame_events:
+#
+#                                            if effect == nfe.event_type and event.subject == nfe.subject:
+#                                                correct = True
+#                                                break
+#
+#                                        if correct:
+#                                            #print(f'correct: {[(e.event_type, e.subject) for e in events]} -> {(predicted_event.event_type, predicted_event.subject)}')
+#                                            if rule_usage[i_cat][i][element_idx] != 2: # not wrong
+#                                                rule_usage[i_cat][i][element_idx] = 1
+#                                        else:
+#                                            #print(f'wrong: {[(e.event_type, e.subject) for e in events]} -> {(predicted_event.event_type, predicted_event.subject)}')
+#                                            rule_usage[i_cat][i][element_idx] = 2
+#
+#        for rule_usage_cat in rule_usage:
+#
+#            rule_usage_list = list(itertools.chain.from_iterable(rule_usage_cat))
+#            score -= rule_usage_list.count(-1) * 1000 # penalty for each element to with a rule is never applied
+#            score -= rule_usage_list.count(2) * 1000 # penalty for each element to with a rule is wrongly applied
+#            score += rule_usage_list.count(1) * 10 # bonus for each element to with a rule is correctly applied
+#
+#
+#        objects_in_categories = {obj.id: 0 for obj in self._objects}
+#        elements_in_objects = {elem.id: 0 for elem in self._element_pool}
+#
+#        for obj in self._objects:
+#            
+#            score -= len(obj.elements) *100 # penalty for too many elements in an object
+#
+#            for elem in obj.elements:
+#                elements_in_objects[elem.id] += 1
+#            
+#        for element_repetitions in elements_in_objects.values():
+#
+#            if element_repetitions > 1:
+#                score -= pow(1000, element_repetitions - 1) # penalty for same element in different objects
+#                pass
+#
+#            elif element_repetitions == 0:
+#                score -= 100000000 # penalty for element not present in any object
+#                pass
+#
+#
+#        for cat in self._categories:
+#            
+#            score -= len(cat.objects) # penalty for too many objects in a category
+#
+#            for obj in cat.objects:
+#                if obj.id in objects_in_categories.keys():
+#                    objects_in_categories[obj.id] += 1
 #                else:
-#                    sw = tmp[:, :, 1].sum()
-#                    if sw > 0: score -= sw
-#                    else:
-#                        sc = tmp[:, :, 0].sum()
-#                        if sc > 0: score += sc
-#                        else: score -= 10
-        
-        #print(self)
-        #print(score)
-        self._fitness = score
-
-        #exit()
-
-    
-    def compute_fitness_2(self, events_per_frame: list[list[Event]], log= False) -> None:
-
-        score = 0
-
-        score -= len(self._rules)
-        score -= len(self._objects)
-        score -= len(self._categories)
-
-        element_repetitions_in_objects = [sum([bool(elem in obj.elements) for obj in self._objects]) for elem in self._element_pool]
-        for erio in element_repetitions_in_objects:
-            if erio > 1: score -= pow(erio - 1, 2)
-
-        object_repetitions_in_categories = [sum([bool(obj in cat.objects) for cat in self._categories]) for obj in self._objects]
-        for oric in object_repetitions_in_categories:
-            if oric > 1: score -= pow(oric - 1, 2)
-
-        element_cat_rule_usage = {elem.id: 0 for elem in self._element_pool}
-        for cat1, cat2 in itertools.combinations(self.categories, 2):
-            for rule1, rule2 in itertools.product(cat1.rules, cat2.rules):
-                if rule1 == rule2:
-                    for elem1_id, elem2_id in itertools.product(cat1.get_elements_id(), cat2.get_elements_id()):
-                        if elem1_id == elem2_id:
-                            element_cat_rule_usage[elem1_id] += 1
-
-        rule_cat_elem_repetitions = [x for x in element_cat_rule_usage.values() if x > 1]
-
-        for rcer in rule_cat_elem_repetitions: score -= pow(10, rcer)
-
-        #rules_usage = {rule.id: {'correct': 0, 'wrong': 0, 'subject_categories': [], 'subject_objects': [], 'subject_elements': []} for rule in self._rules}
-
-        #element_correctness_in_objects = {obj.id: {'correct': 0, 'wrong': 0, 'all_correct': 0} for obj in self._objects}
-        #element_correctness_in_categories = {cat.id: {'correct': 0, 'wrong': 0, 'all_correct': 0} for cat in self._categories}
-
-        for cat in self._categories:
-
-            cat_is_correct = False
-
-            for frame_id in range(len(events_per_frame) - 1):
-
-                current_events = events_per_frame[frame_id]
-
-                if current_events:
-
-                    next_frame_events = events_per_frame[frame_id + 1]
-
-                    for current_event in current_events:
-
-                        for cat_rule in cat.rules:
-                            
-                            #cat_used = False
-
-                            if cat_rule.trigger == current_event:
-
-                                for cat_obj in cat.objects:
-
-                                    cat_obj_used = False
-                                    obj_is_correct = False
-
-                                    for cat_obj_elem in cat_obj.elements:
-
-                                        if current_event.subject == cat_obj_elem:
-
-                                            cat_obj_used = True
-                                                
-                                            #if cat_obj_elem not in rules_usage[cat_rule.id]['subject_elements']:
-                                            #    rules_usage[cat_rule.id]['subject_elements'].append(cat_obj_elem.id)
-
-                                            if (cat_rule.effect, current_event.subject) in next_frame_events:
-                                                #score += 1
-                                                cat_is_correct, obj_is_correct = True, True
-                                                #rules_usage[cat_rule.id]['correct'] += 1
-                                                #element_correctness_in_objects[cat_obj.id]['correct'] += 1
-                                                #element_correctness_in_categories[cat.id]['correct'] += 1
-                                            else:
-                                                score -= 1
-                                                #rules_usage[cat_rule.id]['wrong'] += 1
-                                                #element_correctness_in_objects[cat_obj.id]['wrong'] += 1
-                                                #element_correctness_in_categories[cat.id]['wrong'] += 1
-
-                                    if cat_obj_used:
-
-                                        #cat_used = True
-
-                                        #if cat_obj not in rules_usage[cat_rule.id]['subject_objects']:
-                                        #    rules_usage[cat_rule.id]['subject_objects'].append(cat_obj.id)
-                                            
-
-                                        if obj_is_correct:
-                                            #element_correctness_in_objects[cat_obj.id]['all_correct'] += 1
-                                            if cat.rules:
-                                                score += len(cat_obj.elements) * 10 # 10
-
-                            #if cat_used:
-                            #    if cat not in rules_usage[cat_rule.id]['subject_categories']:
-                            #        rules_usage[cat_rule.id]['subject_categories'].append(cat.id)
-
-            if cat_is_correct:
-                #element_correctness_in_categories[cat.id]['all_correct'] += 1
-                if cat.rules:
-                    score += len(cat.objects) # 1
-
-        #for ru in rules_usage.values():
-        #    if ru['wrong'] > 0: score -= 10
-        #    elif ru['correct'] > 0: score += 100
-        #    else: score -= 10
-
-        self._fitness = score
-        return
-
-        for obj in self._objects:
-            score -= len(obj.elements)
-
-        for rule_usage in rules_usage.values():
-
-            if rule_usage['wrong'] > 0:
-                score -= rule_usage['wrong'] * 10
-
-            elif rule_usage['correct'] > 0:
-                score += 10
-
-            else: score -= 100
-
-            element_rule_repetition = {elem.id: 0 for elem in self._element_pool}
-            for subject_element_id in rule_usage['subject_elements']:
-                element_rule_repetition[subject_element_id] += 1
-
-            for elem_rep in element_rule_repetition.values():
-                if elem_rep == 0: score -= 100
-                elif elem_rep > 1: score -= (elem_rep - 1)
-
-            object_rule_repetition = {obj.id: 0 for obj in self._objects}
-            for subject_object_id in rule_usage['subject_objects']:
-                object_rule_repetition[subject_object_id] += 1
-
-            for obj_rep in object_rule_repetition.values():
-                if obj_rep == 0: score -= 100
-                elif obj_rep > 1: score -= (obj_rep - 1)
-
-            category_rule_repetition = {cat.id: 0 for cat in self._categories}
-            for subject_category_id in rule_usage['subject_categories']:
-                category_rule_repetition[subject_category_id] += 1
-
-            for cat_rep in category_rule_repetition.values():
-                if cat_rep == 0: score -= 100
-                elif cat_rep > 1: score -= (cat_rep - 1)
-
-        self._fitness = score
-
-    def compute_fitness_1(self, events_per_frame: list[list[Event]], log= False) -> None:
-
-        score = 0
-        rule_usage = [[[-1 for _ in range(len(cat.get_elements_id()))] for _ in range(len(cat.rules))] for cat in self._categories]
-
-        for frame_id in range(len(events_per_frame) - 1):
-
-            events = events_per_frame[frame_id]
-            next_frame_events = events_per_frame[frame_id + 1]
-
-            if events and next_frame_events:
-
-                for i_cat, cat in enumerate(self._categories):
-
-                    elements_id = cat.get_elements_id()
-            
-                    for event in events:
-
-                        if event.subject in elements_id:
-
-                            if event.event_type in cat.rules:
-
-                                for i, rule in enumerate(cat.rules):
-
-                                    trigger = rule.trigger
-                                    effect = rule.effect
-
-                                    if event.event_type == trigger:
-                                        element_idx = None
-                                        for elem_i, elem_id in enumerate(elements_id):
-                                            if elem_id == event.subject:
-                                                element_idx = elem_i
-                                                break
-
-                                        rule_usage[i_cat][i][element_idx] = 0 # rule is used on element
-
-                                        # check against next_frame_events
-
-                                        correct = False
-
-                                        for nfe in next_frame_events:
-
-                                            if effect == nfe.event_type and event.subject == nfe.subject:
-                                                correct = True
-                                                break
-
-                                        if correct:
-                                            #print(f'correct: {[(e.event_type, e.subject) for e in events]} -> {(predicted_event.event_type, predicted_event.subject)}')
-                                            if rule_usage[i_cat][i][element_idx] != 2: # not wrong
-                                                rule_usage[i_cat][i][element_idx] = 1
-                                        else:
-                                            #print(f'wrong: {[(e.event_type, e.subject) for e in events]} -> {(predicted_event.event_type, predicted_event.subject)}')
-                                            rule_usage[i_cat][i][element_idx] = 2
-
-        for rule_usage_cat in rule_usage:
-
-            rule_usage_list = list(itertools.chain.from_iterable(rule_usage_cat))
-            score -= rule_usage_list.count(-1) * 1000 # penalty for each element to with a rule is never applied
-            score -= rule_usage_list.count(2) * 1000 # penalty for each element to with a rule is wrongly applied
-            score += rule_usage_list.count(1) * 10 # bonus for each element to with a rule is correctly applied
-
-
-        objects_in_categories = {obj.id: 0 for obj in self._objects}
-        elements_in_objects = {elem.id: 0 for elem in self._element_pool}
-
-        for obj in self._objects:
-            
-            score -= len(obj.elements) *100 # penalty for too many elements in an object
-
-            for elem in obj.elements:
-                elements_in_objects[elem.id] += 1
-            
-        for element_repetitions in elements_in_objects.values():
-
-            if element_repetitions > 1:
-                score -= pow(1000, element_repetitions - 1) # penalty for same element in different objects
-                pass
-
-            elif element_repetitions == 0:
-                score -= 100000000 # penalty for element not present in any object
-                pass
-
-
-        for cat in self._categories:
-            
-            score -= len(cat.objects) # penalty for too many objects in a category
-
-            for obj in cat.objects:
-                if obj.id in objects_in_categories.keys():
-                    objects_in_categories[obj.id] += 1
-                else:
-                    raise Exception(f'misaligned objects error - get_fitness_adjustments\nobjects:{self._objects}\nobj: {obj}')
-
-        for object_repetitions in objects_in_categories.values():
-
-            if object_repetitions > 1:
-                score -= pow(10, object_repetitions - 1) # penalty for objects repeated in many categories
-                pass
-
-            elif object_repetitions == 0:
-                score -= 100000 # penalty for object not present in any category
-
-        score -= len(self._categories) # penalty for too many categories
-
-        self._fitness = score
+#                    raise Exception(f'misaligned objects error - get_fitness_adjustments\nobjects:{self._objects}\nobj: {obj}')
+#
+#        for object_repetitions in objects_in_categories.values():
+#
+#            if object_repetitions > 1:
+#                score -= pow(10, object_repetitions - 1) # penalty for objects repeated in many categories
+#                pass
+#
+#            elif object_repetitions == 0:
+#                score -= 100000 # penalty for object not present in any category
+#
+#        score -= len(self._categories) # penalty for too many categories
+#
+#        self._fitness = score

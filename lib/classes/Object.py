@@ -8,7 +8,7 @@ class Object:
     def __init__(self, id, elements: list[Element] = None):
         
         self._id = id
-        if elements is None: self._elements = []
+        if elements is None: self._elements: list[Element] = []
         else: self._elements = [elem for elem in elements]
 
     @property
@@ -32,7 +32,7 @@ class Object:
     
     def initialize(self, element_pool: list[Element], object_pool: list['Object'] = []) -> 'Object':
 
-        self._elements = random.choice([[elem] for elem in element_pool if [elem] not in object_pool])
+        self._elements: list[Element] = random.choice([[elem] for elem in element_pool if [elem] not in object_pool])
 
         return self
     
@@ -81,7 +81,7 @@ class Object:
             if i in idx: elems_to_move.append(elem)
             else: elems_to_keep.append(elem)
 
-        self._elements = elems_to_keep
+        self._elements: list[Element] = elems_to_keep
 
         return Object(new_id, elems_to_move)
 

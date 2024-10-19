@@ -14,8 +14,8 @@ class Category:
         self._id = id
 
         if objects is None or rules is None:
-            self._objects = []
-            self._rules = []
+            self._objects: list[Object] = []
+            self._rules: list[Rule] = []
         
         else:
             self._objects = [obj for obj in objects]
@@ -34,7 +34,7 @@ class Category:
         return self._rules
 
     def __repr__(self):
-        out = f'Category_{self.id}:\n\nObjects:\n'
+        out = f'Category_{self._id}:\n\nObjects:\n'
         if not self._objects: out += 'No Objects\n'
         for obj in self._objects:
             out += f'{obj}\n'

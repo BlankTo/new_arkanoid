@@ -87,7 +87,7 @@ evo = EvolutionaryAlgorithm(element_pool, events_per_frame, list(event_pool.valu
 # run evolution
 
 try:
-    evo.run(1000, 100, patience= 100)
+    evo.run(1000, 100, patience= 200)
 except KeyboardInterrupt:
     print('evolution stopped by user request')
 
