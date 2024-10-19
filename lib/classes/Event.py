@@ -10,7 +10,7 @@ class Event:
         self._subject = subject
 
     @property
-    def event_type(self): return self._event_type
+    def event_type(self) -> EventType: return self._event_type
 
     @property
     def subject(self): return self._subject

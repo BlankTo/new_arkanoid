@@ -59,7 +59,7 @@ class Individual:
         return self._categories
 
     @property
-    def fitness(self):
+    def fitness(self) -> int:
         return self._fitness
     
     def __repr__(self):

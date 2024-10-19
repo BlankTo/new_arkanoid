@@ -12,7 +12,7 @@ class Object:
         else: self._elements = [elem for elem in elements]
 
     @property
-    def id(self): return self._id
+    def id(self) -> int: return self._id
 
     @property
     def elements(self) -> list[Element]:
@@ -36,10 +36,10 @@ class Object:
 
         return self
     
-    def add_element(self, elem):
+    def add_element(self, elem) -> None:
         if elem not in self._elements: self._elements.append(elem)
     
-    def remove_element(self, elem, elems_to_add: list[Element] = None):
+    def remove_element(self, elem, elems_to_add: list[Element] = None) -> None:
         if elem in self._elements: self._elements.remove(elem)
         if elems_to_add:
             for elem in elems_to_add: self.add_element(elem)

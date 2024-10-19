@@ -8,7 +8,7 @@ class EventType:
         self._description = description
 
     @property
-    def id(self): return self._id
+    def id(self) -> int: return self._id
 
     @property
     def description(self): return self._description

@@ -13,7 +13,7 @@ class Rule:
         self._effect = effect
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self._id
 
     @property

@@ -22,7 +22,7 @@ class Category:
             self._rules = [rule for rule in rules]
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self._id
 
     @property

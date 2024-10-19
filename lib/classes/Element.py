@@ -9,7 +9,7 @@ class Element:
         self._properties = properties
 
     @property
-    def id(self): return self._id
+    def id(self) -> int: return self._id
 
     @property
     def description(self): return self._description
