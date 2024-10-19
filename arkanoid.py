@@ -3,6 +3,7 @@ import time
 import math
 import pygame
 import pickle
+import random
 import numpy as np
 from datetime import datetime
 
@@ -28,7 +29,7 @@ class Game:
         self.init_grid()
 
         self.elements = {}
-        self.event_log = {}
+        self.event_log = []
 
         self.init_walls()
 
@@ -45,7 +46,7 @@ class Game:
 
         self.init_paddle()
 
-        self.ball_x, self.ball_y = 45, 40
+        self.ball_x, self.ball_y = 40 + random.randint(0, 10), 40 + random.randint(0, 10)
         self.ball_radius = 1
         self.ball_speed_x, self.ball_speed_y = 1, 1
 
@@ -149,9 +150,10 @@ class Game:
         self.b[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
         
         self.elements[f'brick_{brick_id}']['alive'] = False
-        self.event_log['disappearance'] = {
-            'subject': id,
-        }
+        self.event_log.append({
+            'description': 'disappearance',
+            'subject': id
+        })
         self.bricks_alive -= 1
 
 
@@ -179,11 +181,6 @@ class Game:
         
             if (self.paddle_x - self.paddle_halfwidth + self.paddle_speed > 2) and (self.paddle_x + self.paddle_halfwidth + self.paddle_speed < grid_width - 3):
                 if (self.ball_y + self.ball_radius > self.paddle_y - self.paddle_halfheight - 1 and self.ball_y - self.ball_radius < self.paddle_y + self.paddle_halfheight + 1) and (self.ball_x + self.ball_radius > self.paddle_x - self.paddle_halfwidth + self.paddle_speed and self.ball_x - self.ball_radius < self.paddle_x + self.paddle_halfwidth + self.paddle_speed):
-                    
-                    #self.ball_speed_x = -self.ball_speed_x
-
-                    #self.event_log.append(('collision', 1, 3))
-
                     pass
 
                 else:
@@ -263,14 +260,16 @@ class Game:
         
         for collision_id in collisions:
             if collision_id != 0:
-                self.event_log['collision'] = {
+                self.event_log.append({
+                    'description': 'collision',
                     'subject': 1,
                     'object': collision_id,
-                }
-                self.event_log['collision'] = {
+                })
+                self.event_log.append({
+                    'description': 'collision',
                     'subject': collision_id,
                     'object': 1,
-                }
+                })
                 if collision_id >= 9:
                     self.event_pending.append((self.del_brick, collision_id))
 
@@ -293,15 +292,17 @@ class Game:
 
     def bounce_x(self):
         self.ball_speed_x = - self.ball_speed_x
-        self.event_log['bounce'] = {
-            'subject': 1,
-        }
+        self.event_log.append({
+            'description': 'bounce',
+            'subject': 1
+        })
 
     def bounce_y(self):
         self.ball_speed_y = - self.ball_speed_y
-        self.event_log['bounce'] = {
-            'subject': 1,
-        }
+        self.event_log.append({
+            'description': 'bounce',
+            'subject': 1
+        })
 
     def resolve_pending(self):
         for event, param in self.event_pending:
@@ -318,7 +319,7 @@ class Game:
         self.draw_ball()
 
         event_log = self.event_log
-        self.event_log = {}
+        self.event_log = []
 
         return self.elements, event_log, (self.bricks_alive == 0)
     
@@ -357,7 +358,7 @@ frames = [{
     'frame_id': frame_id,
     'commands': [],
     'elements': element_log,
-    'events': {}
+    'events': []
 }]
 frame_id += 1
 
@@ -426,15 +427,16 @@ while screen_running:
             element_log, event_log, end_game = game.update()
 
             if first_time_run:
-                event_log['start game'] = {
-                    'subject': 0,
-                }
+                event_log.append({
+                    'description': 'game_start',
+                    'subject': 0
+                })
                 first_time_run = False
 
-            print('----------------------------------')
-            print('----------------------------------')
-            print(f'frame {frame_id}')
-            print(event_log)
+            #print('----------------------------------')
+            #print('----------------------------------')
+            #print(f'frame {frame_id}')
+            #print(event_log)
 
             frames.append({
                 'frame_id': frame_id,
