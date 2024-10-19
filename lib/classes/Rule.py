@@ -1,8 +1,28 @@
 import random
 import itertools
 
-from .EventType import EventType
+from .event_type import EventType
 
+"""
+rule.py
+
+Functions:
+- __init__(self, id, trigger: EventType = None, effect: EventType = None)
+  Create an empty Rule (ready to be initialized) or a full one if trigger and effect are passed.
+
+- initialize(self, event_pool: list[EventType], rule_pool: list['Rule'] = []) -> 'Rule'
+  Initialize the rule with events from the event_pool, avoiding repetitions.
+
+- __eq__(self, other)
+  Compare with:
+    - self.__class__
+    - int (id == other)
+    - tuple (trigger == other[0] and effect == other[1])
+    - EventType (trigger == other)
+
+Dependencies:
+-
+"""
 
 class Rule:
 

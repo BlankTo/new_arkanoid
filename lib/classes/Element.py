@@ -1,4 +1,19 @@
+"""
+element.py
 
+Functions:
+- __init__(self, id, description, properties)
+  Create an Element, with attributes that are not gonna change.
+
+- __eq__(self, other)
+  Compare with:
+    - self.__class__
+    - int (id == other)
+    - str (description == other)
+
+Dependencies:
+-
+"""
 
 class Element:
     

@@ -1,10 +1,57 @@
 import random
 import itertools
 
-from .Element import Element
-from .Object import Object
-from .Event import Event
-from .Rule import Rule
+from .element import Element
+from .object import Object
+from .event import Event
+from .rule import Rule
+
+"""
+category.py
+
+Functions:
+- __init__(id: int, objects: list[Object] = None, rules: list[Rule] = None)
+  Create an empty Category (ready to be initialized) or a full one if objects and rules are passed.
+  
+- initialize(self, object_pool: list[Object], rule_pool: list[Event], category_pool: list['Category'] = []) -> 'Category'
+  random initialization of the category, avoiding repetitions.
+
+- add_object(self, obj) -> None
+  add an object to the category, if not already present.
+
+- add_rule(self, rule) -> None
+  add an rule to the category, if not already present.
+
+- remove_object(self, obj, objs_to_add: list[Object] = None) -> None
+  remove an object from the category, if it's present. Then adds the replacements, if passed.
+
+- remove_rule(self, rule) -> None
+  remove a rule from the category, if it's present.
+
+- get_elements_id(self) -> list[int]
+
+- mutate(self, object_pool: list[Element], rule_pool: list[Event]) -> None
+  Mutate the category:
+    - add obj from object_pool
+    - remove obj
+    - add rule from rule_pool
+    - remove rule
+
+- fuse(self, other: 'Category') -> None
+  Take another Category and add all the objects and rules from it, if not already present.
+
+- divide_new_rule(self, new_id, rule_pool, no= 1) -> 'Category'
+  Create a new Category, moving one object to it.
+
+- __eq__(self, other)
+  Compare with:
+    - self.__class__
+    - int (id == other)
+    - tuple (objects == other[0] and rules == other[1])
+
+Dependencies:
+-
+"""
 
 
 class Category:
@@ -76,6 +123,13 @@ class Category:
     def remove_rule(self, rule) -> None:
         if rule in self._rules: self._rules.remove(rule)
 
+    def get_elements_id(self):
+        elements_id = []
+        for obj in self._objects:
+            for elem in obj.elements:
+                elements_id.append(elem.id)
+        return list(set(elements_id))
+
     def mutate(self, object_pool: list[Element], rule_pool: list[Event]) -> None:
 
         leno = len(self._objects)
@@ -130,13 +184,4 @@ class Category:
         self._objects = objs_to_keep
 
         return Category(new_id, objs_to_move, Category.init_rand(rule_pool))
-    
 
-    ## for old fitness
-
-    def get_elements_id(self):
-        elements_id = []
-        for obj in self._objects:
-            for elem in obj.elements:
-                elements_id.append(elem.id)
-        return list(set(elements_id))

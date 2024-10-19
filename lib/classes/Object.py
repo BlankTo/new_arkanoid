@@ -1,7 +1,43 @@
 import random
 
-from .Element import Element
+from .element import Element
 
+"""
+object.py
+
+Functions:
+- __init__(self, id, elements: list[Element] = None)
+  Create an empty Object (ready to be initialized) or a full one if elements are passed.
+
+- initialize(self, element_pool: list[Element], object_pool: list['Object'] = []) -> 'Object'
+  Initialize the object with elements from the element_pool, avoiding repetitions.
+
+- add_element(self, elem) -> None
+  Add an element, if not already present.
+
+- remove_element(self, elem) -> None
+  Remove an element, if it's present.
+
+- mutate(self, element_pool: list[Element]) -> None
+  Mutate the object:
+    - add an element from the element_pool
+    - remove an element
+
+- fuse(self, other: 'Object') -> None
+  Take another object and add the elements from it, if not already present.
+
+- divide(self, new_id, no= 1) -> 'Object'
+  Divide the object in two by taking one element and creating a new Object with it inside.
+
+- __eq__(self, other)
+  Compare with:
+    - self.__class__
+    - int (id == other)
+    - list[Element] (elements == other)
+
+Dependencies:
+-
+"""
 
 class Object:
 

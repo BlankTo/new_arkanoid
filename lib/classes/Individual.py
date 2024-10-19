@@ -1,12 +1,54 @@
 import random
 
-from .Category import Category
-from .Element import Element
-from .Event import Event
-from .Object import Object
-from .Rule import Rule
+from .category import Category
+from .element import Element
+from .event import Event
+from .object import Object
+from .rule import Rule
 from ..utils import ID_creator
 
+"""
+individual.py
+
+Functions:
+- __init__(self, element_pool: list[Element], event_pool: list[Event], original: 'Individual' = None)
+  Create an empty Individual (ready to be initialized) or create a deep copy of the original, recreating objects, rules and categories from scratch.
+
+- get_current_ids(self) -> tuple[int, int, int]
+  Support function for the deepcopy in __init__, it ensure that the ids in the new category will be unique and scorrelated from the original.
+
+- initialize(self, min_starting= 2, max_starting= 10) -> 'Individual'
+  Initialize the individual creating object and rules, then categories.
+
+- mutate(self) -> 'Individual'
+  Mutate the individual:
+    - create a new object, avoiding repetitions
+    - create a new rule, avoiding repetitions
+    - create a new category
+    - move an element from an object to another
+    - divide an object in two by removing one element from an object and creating a new Object from it
+    - delete an object
+    - fuse two objects
+    - move an object from a category to another
+    - divide a category in two by removing one object from a category and creating a new Category from it
+    - delete a category
+    - fuse two categories
+    - delete a rule
+    - mutate an object (see Object.mutate)
+    - mutate a Category (see Category.mutate)
+
+- predict_single_frame(self, current_events: list[Event]) -> list[Event]
+  Predict the effects based on the current_events.
+
+- predict_all(self, events_per_frame: list[list[Event]]) -> list[list[Event]]
+  Predict the effects for all frames.
+
+- compute_fitness(self, events_per_frame: list[list[Event]], log= False) -> None
+  compute and updates fitness (see below for comments on penalties and bonuses).
+
+Dependencies:
+-
+"""
 
 class Individual:
 

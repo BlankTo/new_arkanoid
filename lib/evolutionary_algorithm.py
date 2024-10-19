@@ -5,6 +5,25 @@ import random
 from .classes import Individual
 from .utils import ID_creator, format_time
 
+"""
+evolutionary_algorithm.py
+
+Functions:
+- __init__(self, event_type: EventType, subject: Element)
+  Create and initialize the EvolutionaryAlgorithm class, with the element_pool, the event_pool. also initialize the id_generators.
+
+- initialize_population(self, num_individuals= 100) -> 'EvolutionaryAlgorithm'
+  Initialize the population.
+
+- run(self, max_generations= 100, num_individuals= 100, patience= None, num_survivors= None) -> None
+  Run the evolutionary algorithm.
+
+- get_winner(self) -> Individual
+  Return the winner of the last run.
+
+Dependencies:
+-
+"""
 
 class EvolutionaryAlgorithm:
 
@@ -20,20 +39,14 @@ class EvolutionaryAlgorithm:
         self.get_category_id = ID_creator().get_id
         self.get_rule_id = ID_creator().get_id
 
-        self.old_best = - math.inf        
+        self.old_best = - math.inf
 
-    def run(self, max_generations= 100, num_individuals= 100, patience= None, num_survivors= None) -> None:
-
-        # initialize population
-        
+    def initialize_population(self, num_individuals= 100) -> 'EvolutionaryAlgorithm':
         self.population = [Individual(self.element_pool, self.event_pool).initialize() for _ in range(num_individuals)]
+        return self
 
-        for ind in self.population:
-            for cat in ind.categories:
-                if len(cat.objects) == 0:
-                    print('initialization init')
-                    print(cat)
-                    exit()
+
+    def run(self, max_generations= 100, patience= None, num_survivors= None) -> None:
 
         # setting loop config
 
@@ -43,7 +56,7 @@ class EvolutionaryAlgorithm:
             patience = max_generations // 10
             if patience < 100: patience = 100
 
-        if num_survivors is None: num_survivors = num_individuals // 5
+        if num_survivors is None: num_survivors = len(self.population) // 5
 
         # evolution loop start
 

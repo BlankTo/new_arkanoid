@@ -1,6 +1,23 @@
-from .Element import Element
-from .EventType import EventType
+from .element import Element
+from .event_type import EventType
 
+"""
+event.py
+
+Functions:
+- __init__(self, event_type: EventType, subject: Element)
+  Create an Event, with attributes that are not gonna change.
+
+- __eq__(self, other)
+  Compare with:
+    - self.__class__
+    - EventType (trigger == other)
+    - tuple (trigger == other[0] and subject == other[1])
+    - Element (subject == other)
+
+Dependencies:
+-
+"""
 
 class Event:
 

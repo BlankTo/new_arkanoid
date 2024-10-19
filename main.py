@@ -1,13 +1,13 @@
 import pickle
 
 from lib.classes import Element, EventType, Event
-from lib.evolution import EvolutionaryAlgorithm
+from lib.evolutionary_algorithm import EvolutionaryAlgorithm
 
 
 # retrieve log and create pools
 
-with open('logs/arkanoid_logs/arkanoid_log__17_10_2024_17_47_51.pkl', 'rb') as log_file:
-#with open('logs/arkanoid_logs/arkanoid_log__19_10_2024_19_28_17.pkl', 'rb') as log_file:
+#with open('logs/arkanoid_logs/arkanoid_log__17_10_2024_17_47_51.pkl', 'rb') as log_file:
+with open('logs/arkanoid_logs/arkanoid_log__19_10_2024_19_28_17.pkl', 'rb') as log_file:
     log = pickle.load(log_file)
 
 events_per_frame = []
@@ -82,12 +82,12 @@ if 0:
 
 # initialize evolution
 
-evo = EvolutionaryAlgorithm(element_pool, events_per_frame, list(event_pool.values()))
+evo = EvolutionaryAlgorithm(element_pool, events_per_frame, list(event_pool.values())).initialize_population(100)
 
 # run evolution
 
 try:
-    evo.run(1000, 100, patience= 200)
+    evo.run(1000, patience= 200)
 except KeyboardInterrupt:
     print('evolution stopped by user request')
 
