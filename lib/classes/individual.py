@@ -105,19 +105,18 @@ class Individual:
         return self._fitness
     
     def __repr__(self):
-        out = 'Objects:\n'
+        out = '  --  All Objects:  --  \n'
         if not self._objects: out += 'No Objects\n'
         for obj in self._objects:
             out += f'{obj}\n'
-        out += '\nRules:\n'
+        out += '\n  --  All Rules:  --  \n'
         if not self._rules: out += 'No Rules\n'
         for rule in self._rules:
             out += f'{rule}\n'
-        out += '\nCategories:\n'
+        out += '\n  --  All Categories:  --  \n'
         if not self._categories: out += 'No Categories\n'
         for cat in self._categories:
             out += f'{cat}\n'
-        out += '\n'
         return out
     
     def get_current_ids(self) -> tuple[int, int, int]:

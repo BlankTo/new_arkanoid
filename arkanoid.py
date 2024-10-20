@@ -463,7 +463,7 @@ while screen_running:
 
 if save_log:
     
-    with open(f'logs/arkanoid_logs/arkanoid_log_{datetime.now().strftime("_%d_%m_%Y_%H_%M_%S")}.pkl', 'wb') as logfile:
+    with open(f'logs/arkanoid_logs/arkanoid_log{datetime.now().strftime("_%d_%m_%Y_%H_%M_%S")}.pkl', 'wb') as logfile:
         pickle.dump(frames, logfile)
 
 pygame.quit()

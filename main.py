@@ -1,50 +1,85 @@
+import os
 import pickle
 
 from lib.classes import Element, EventType, Event
 from lib.evolutionary_algorithm import EvolutionaryAlgorithm
 
 
-# retrieve log and create pools
+# Retrieve log
 
-#with open('logs/arkanoid_logs/arkanoid_log__17_10_2024_17_47_51.pkl', 'rb') as log_file:
-with open('logs/arkanoid_logs/arkanoid_log__19_10_2024_19_28_17.pkl', 'rb') as log_file:
+log_file_name = None
+#log_file_name = 'arkanoid_log_17_10_2024_17_47_51.pkl'
+#log_file_name = 'arkanoid_log_19_10_2024_19_28_17.pkl'
+
+if log_file_name is None: # use last saved
+
+    log_files_name = os.listdir('logs/arkanoid_logs')
+    if not log_files_name: raise Exception('no saved logs')
+    log_file_name = sorted(log_files_name, reverse= True)[0]
+
+log_file_path = f'logs/arkanoid_logs/{log_file_name}'
+with open(log_file_path, 'rb') as log_file:
     log = pickle.load(log_file)
+
+print(f'{log_file_path} loaded')
+
+# Create element_pool and event_pool
 
 events_per_frame = []
 event_pool = {}
-element_pool = []
+elements_per_frame = []
+element_pool = {}
 event_type_id = 0
 
 for frame in log:
     frame_id = frame['frame_id']
-    if frame_id == 0:
-        element_dict = {0: 0}
-        for description, element in frame['elements'].items():
-            new_elem = Element(element['id'], description, None)
-            element_pool.append(new_elem)
-            element_dict[element['id']] = new_elem
+
+    elements = []
+    for description, elem in frame['elements'].items():
+
+        if elem['id'] in element_pool.keys():
+            elements.append(element_pool[elem['id']])
+
+        else:
+            new_elem = Element(elem['id'], description, None)
+            element_pool[elem['id']] = new_elem
+            elements.append(new_elem)
+
+    elements_per_frame.append(elements)
 
     events = []
     for event in frame['events']:
         description = event['description']
-        if description not in event_pool.keys():
-            event_pool[description] = EventType(event_type_id, description)
-            event_type_id += 1
-        events.append(Event(event_pool[description], element_dict[event['subject']]))
+        subject = event['subject']
+
+        if subject: # TODO implement NoElement Element and assign it to 0 id
+
+            if description not in event_pool.keys():
+                event_pool[description] = EventType(event_type_id, description)
+                event_type_id += 1
+                
+            events.append(Event(event_pool[description], element_pool[subject]))
     
     events_per_frame.append(events)
+
+element_pool = list(element_pool.values())
+event_pool = list(event_pool.values())
 
 print('\n-------------------------------------\nelement pool:\n')
 print(element_pool)
 print('\n-------------------------------------\nevent pool:\n')
-print(list(event_pool.values()))
+print(event_pool)
 print('\n-------------------------------------')
 
 #for i in range(1000):
 #    print(events_per_frame[i])
 #exit()
 
-if 0:
+#for i in range(1000):
+#    print(elements_per_frame[i])
+#exit()
+
+if False:
     from lib.classes import Individual, Object, Rule, Category
     paddle = None
     ball = None
@@ -82,7 +117,7 @@ if 0:
 
 # initialize evolution
 
-evo = EvolutionaryAlgorithm(element_pool, events_per_frame, list(event_pool.values())).initialize_population(100)
+evo = EvolutionaryAlgorithm(element_pool, events_per_frame, event_pool).initialize_population(100)
 
 # run evolution
 
