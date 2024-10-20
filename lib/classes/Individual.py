@@ -524,6 +524,8 @@ class Individual:
                         score -= 1 # penalty for (cat, rule) in same cat but never used
                         if log: print(f'(cat_{cat.id}, {rule}): {cc} -> not_used -> penalty: -1')
 
+        #score -= len(self._categories) # penalty for number of categories
+
         score += all_correct_cats
         if log: print(f'all_correct_cats: {all_correct_cats} -> bonus: +{all_correct_cats}')
 

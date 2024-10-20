@@ -103,7 +103,7 @@ class EvolutionaryAlgorithm:
 
                 for survivor in survivors:
                     survivor_clone = Individual(self.element_pool, self.event_pool, survivor).mutate() # clone and mutate one time
-                    for _ in range(random.randint(0, 5)): survivor_clone.mutate() # more random mutations ?
+                    #for _ in range(random.randint(0, 5)): survivor_clone.mutate() # more random mutations ?
                     offspring.append(survivor_clone)
 
                 # Mutation
