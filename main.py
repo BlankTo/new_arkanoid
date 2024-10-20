@@ -5,7 +5,7 @@ from lib.classes import Element, EventType, Event
 from lib.evolutionary_algorithm import EvolutionaryAlgorithm
 
 
-# Retrieve log
+## Retrieve log
 
 log_file_name = None
 #log_file_name = 'arkanoid_log_17_10_2024_17_47_51.pkl'
@@ -23,7 +23,8 @@ with open(log_file_path, 'rb') as log_file:
 
 print(f'{log_file_path} loaded')
 
-# Create element_pool and event_pool
+
+## Create element_pool and event_pool
 
 events_per_frame = []
 event_pool = {}
@@ -62,8 +63,8 @@ for frame in log:
     
     events_per_frame.append(events)
 
-element_pool = list(element_pool.values())
-event_pool = list(event_pool.values())
+element_pool: list[Element] = list(element_pool.values())
+event_pool: list[EventType] = list(event_pool.values())
 
 print('\n-------------------------------------\nelement pool:\n')
 print(element_pool)
@@ -79,60 +80,68 @@ print('\n-------------------------------------')
 #    print(elements_per_frame[i])
 #exit()
 
+## to check fitness on custom individuals
+
 if False:
     from lib.classes import Individual, Object, Rule, Category
+
     paddle = None
     ball = None
     bricks = []
     walls = []
     for i, elem in enumerate(element_pool):
-        if elem.description == 'ball':
+        if elem == 'ball':
             ball = Object(666, [elem])
-        if 'paddle' in elem.description:
+        if elem == 'paddle_center':
             paddle = Object(667, [elem])
         if 'brick' in elem.description:
             bricks.append(Object(668 + i, [elem]))
         if 'wall' in elem.description:
             walls.append(Object(768 + i, [elem]))
+
     collision = None
     bounce = None
     disappearance = None
-    for event_type in list(event_pool.values()):
-        if event_type.description == 'collision': collision = event_type
-        if event_type.description == 'bounce': bounce = event_type
-        if event_type.description == 'disappearance': disappearance = event_type
+    for event_type in event_pool:
+        if event_type == 'collision': collision = event_type
+        if event_type == 'bounce': bounce = event_type
+        if event_type == 'disappearance': disappearance = event_type
+
     ball_rule = Rule(666, collision, bounce)
     bricks_rule = Rule(667, collision, disappearance)
+
     ball_cat = Category(666, [ball], [ball_rule])
     bricks_cat = Category(667, bricks, [bricks_rule])
     others_cat = Category(668, [paddle] + walls, [])
-    my_cat = Individual(element_pool, list(event_pool.values())).set_all([paddle, ball] + bricks + walls, [ball_rule, bricks_rule], [ball_cat, bricks_cat, others_cat])
+
+    my_cat = Individual(element_pool, event_pool).set_all([paddle, ball] + bricks + walls, [ball_rule, bricks_rule], [ball_cat, bricks_cat, others_cat])
+    
     print('my_cat:')
     print(my_cat)
     my_cat.compute_fitness(events_per_frame, log= True)
-    print(f'my_cat_fitness: {my_cat.fitness}')
+    print(f'my_cat_fitness: {my_cat.fitness}') # 70
 
     exit()
 
 
-# initialize evolution
+## initialize evolution
 
-evo = EvolutionaryAlgorithm(element_pool, events_per_frame, event_pool).initialize_population(100)
+evo = EvolutionaryAlgorithm(element_pool, event_pool, events_per_frame).initialize_population(100)
 
-# run evolution
+## run evolution
 
 try:
     evo.run(1000, patience= 200)
 except KeyboardInterrupt:
     print('evolution stopped by user request')
 
-# evaluate results
+## evaluate results
 
 print('========================================================================')
 print('========================================================================')
 
 winner = evo.get_winner()
-winner.compute_fitness(events_per_frame) #, log= True)
+winner.compute_fitness(events_per_frame) #, log= True) # log= True to show fitness computation on winner
 print('winner:\n')
 print(winner)
 print(f'best_fitness: {winner.fitness}\n')

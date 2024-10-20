@@ -9,14 +9,14 @@ from .utils import ID_creator, format_time
 evolutionary_algorithm.py
 
 Functions:
-- __init__(self, event_type: EventType, subject: Element)
+- __init__(self, element_pool, event_pool, events_per_frame)
   Create and initialize the EvolutionaryAlgorithm class, with the element_pool, the event_pool. also initialize the id_generators.
 
 - initialize_population(self, num_individuals= 100) -> 'EvolutionaryAlgorithm'
   Initialize the population.
 
 - run(self, max_generations= 100, num_individuals= 100, patience= None, num_survivors= None) -> None
-  Run the evolutionary algorithm.
+  Run the evolutionary algorithm. (fitness and mutation are contained in individual.py)
 
 - get_winner(self) -> Individual
   Return the winner of the last run.
@@ -27,7 +27,7 @@ Dependencies:
 
 class EvolutionaryAlgorithm:
 
-    def __init__(self, element_pool, events_per_frame, event_pool):
+    def __init__(self, element_pool, event_pool, events_per_frame):
 
         self.element_pool = element_pool
         self.events_per_frame = events_per_frame
