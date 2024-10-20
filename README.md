@@ -49,7 +49,8 @@ This project implements an evolutionary algorithm designed to discover patterns 
 ## Future plans
 
 Roadmap:
-- Rule with subject and object
+- Event with multiple subjects
+- Rule with subjects and object
 - time window for trigger and effect
 - Add more events in the game
 - avoid re-evaluation of individual
