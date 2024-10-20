@@ -125,7 +125,7 @@ if False:
     print('my_cat:')
     print(my_cat)
     my_cat.compute_fitness(events_per_frame, log= True)
-    print(f'my_cat_fitness: {my_cat.fitness}') # 70
+    print(f'my_cat_fitness: {my_cat.fitness}') # 81 with latest (change based on event_pool and element_pool)
 
     exit()
 
