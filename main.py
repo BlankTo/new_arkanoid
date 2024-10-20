@@ -132,7 +132,7 @@ if False:
 
 ## initialize evolution
 
-evo = EvolutionaryAlgorithm(element_pool, event_pool, events_per_frame).initialize_population(100)
+evo = EvolutionaryAlgorithm(element_pool, event_pool, events_per_frame).initialize_population(num_individuals= 100, lifespan= 1)
 
 ## run evolution
 

@@ -55,7 +55,6 @@ Roadmap:
 - Add more events in the game
 
 To Investigate:
-- individual lifespan (reset by surviving)
 - Define when two elements belong to the same object using events or elements' properties
 - add states as elements' properties, rules update them over frames
 - Automatic creation of events using parametric rules over elements properties

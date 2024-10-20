@@ -52,7 +52,7 @@ Dependencies:
 
 class Individual:
 
-    def __init__(self, element_pool: list[Element], event_pool: list[Event], original: 'Individual' = None):
+    def __init__(self, element_pool: list[Element], event_pool: list[Event], original: 'Individual' = None, lifespan= 1):
         
         self._element_pool = element_pool
         self._event_pool = event_pool
@@ -79,6 +79,8 @@ class Individual:
             self._categories = [Category(cat.id, [obj for obj in self._objects if obj.id in cat.objects], [rule for rule in self._rules if rule.id in cat.rules]) for cat in original.categories]
 
         self._fitness = 0
+        self._max_lifespan = lifespan
+        self._lifespan = lifespan
 
     @property
     def element_pool(self) -> list[Element]:
@@ -103,7 +105,15 @@ class Individual:
     @property
     def fitness(self):
         return self._fitness
+
+    def reset_lifespan(self) -> int:
+        self._lifespan = self._max_lifespan
+        return self._lifespan
     
+    def reduce_lifespan(self) -> int:
+        self._lifespan -= 1
+        return self._lifespan
+
     def __repr__(self):
         out = '  --  All Objects:  --  \n'
         if not self._objects: out += 'No Objects\n'

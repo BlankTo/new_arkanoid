@@ -41,8 +41,8 @@ class EvolutionaryAlgorithm:
 
         self.old_best = - math.inf
 
-    def initialize_population(self, num_individuals= 100) -> 'EvolutionaryAlgorithm':
-        self.population = [Individual(self.element_pool, self.event_pool).initialize() for _ in range(num_individuals)]
+    def initialize_population(self, num_individuals= 100, lifespan= 1) -> 'EvolutionaryAlgorithm':
+        self.population = [Individual(self.element_pool, self.event_pool, lifespan= lifespan).initialize() for _ in range(num_individuals)]
         return self
 
 
@@ -73,7 +73,12 @@ class EvolutionaryAlgorithm:
 
             # Selection
 
-            survivors = sorted(self.population, key= lambda ind: ind.fitness, reverse= True)[:num_survivors]
+            #survivors = sorted(self.population, key= lambda ind: ind.fitness, reverse= True)[:num_survivors] # without lifespan
+            survivors = []
+            for i, ind in enumerate(sorted(self.population, key= lambda ind: ind.fitness, reverse= True)): # with lifespan
+                if i < num_survivors: life = ind.reset_lifespan()
+                else: life = ind.reduce_lifespan()
+                if life > 0: survivors.append(ind)
 
             #print fitness improvement
 
