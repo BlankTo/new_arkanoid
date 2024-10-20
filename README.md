@@ -53,7 +53,6 @@ Roadmap:
 - Rule with subjects and object
 - time window for trigger and effect
 - Add more events in the game
-- avoid re-evaluation of individual
 
 To Investigate:
 - individual lifespan (reset by surviving)

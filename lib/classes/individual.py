@@ -44,7 +44,7 @@ Functions:
   Predict the effects for all frames.
 
 - compute_fitness(self, events_per_frame: list[list[Event]], log= False) -> None
-  compute and updates fitness (see below for comments on penalties and bonuses).
+  compute and updates fitness (see below for comments on penalties and bonuses), if evaluation wasn't already done.
 
 Dependencies:
 -
@@ -101,7 +101,7 @@ class Individual:
         return self._categories
 
     @property
-    def fitness(self) -> int:
+    def fitness(self):
         return self._fitness
     
     def __repr__(self):
@@ -296,6 +296,7 @@ class Individual:
                 #print('mutate_cat')
                 random.choice(self._categories).mutate(self._objects, self._rules)
 
+        self._fitness = 0
         return self
     
     def predict_single_frame(self, current_events: list[Event]) -> list[Event]:
@@ -329,7 +330,8 @@ class Individual:
         
         return predicted_events_per_frame
     
-    def compute_fitness(self, events_per_frame: list[list[Event]], log= False) -> None: self.compute_fitness_4(events_per_frame, log)
+    def compute_fitness(self, events_per_frame: list[list[Event]], log= False) -> None:
+        if self._fitness == 0: self.compute_fitness_4(events_per_frame, log)
     
     def compute_fitness_4(self, events_per_frame: list[list[Event]], log= False) -> None:
 
