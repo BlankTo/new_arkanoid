@@ -11,7 +11,7 @@ refresh_rate = 0.05
 grid_width, grid_height = 121, 71
 screen_width, screen_height = grid_width * 10, grid_height * 10
 
-# 0 empty
+# 0 environment
 # 1 ball
 # 2 paddle_left
 # 3 paddle_center
@@ -26,10 +26,18 @@ class Game:
 
     def __init__(self):
 
-        self.init_grid()
-
         self.elements = {}
         self.event_log = []
+
+        self.elements['environment'] = {
+            'id': 0,
+            'pos': (grid_width // 2, grid_height // 2),
+            'shape': (grid_width // 2, grid_height // 2),
+            'hitbox': ((0, 0), (grid_width - 1, grid_height - 1)),
+            'color': (0, 0, 0)
+        }
+
+        self.init_grid()
 
         self.init_walls()
 
@@ -75,7 +83,10 @@ class Game:
             'pos': (1, math.floor(grid_height / 2)),
             'shape': (1, math.floor(grid_height / 2)),
             'hitbox': ((0, 3), (2, grid_height - 4)),
-            'color': (0, 255, 50)
+            'color': (0, 255, 50),
+            'state': {
+                'color_state': 0,
+            }
         }
 
         self.grid[grid_width - 3:grid_width, 3:grid_height - 3] = 6 # right wall
@@ -88,7 +99,10 @@ class Game:
             'pos': (grid_width - 2, math.floor(grid_height / 2)),
             'shape': (1, math.floor(grid_height / 2)),
             'hitbox': ((grid_width - 3, 3), (grid_width - 1, grid_height - 4)),
-            'color': (0, 255, 100)
+            'color': (0, 255, 100),
+            'state': {
+                'color_state': 0,
+            }
         }
 
         self.grid[3:grid_width - 3, 0:3] = 7 # top wall
@@ -101,7 +115,10 @@ class Game:
             'pos': (math.floor(grid_width / 2), 1),
             'shape': (math.floor(grid_width / 2), 1),
             'hitbox': ((3, 0), (grid_width - 4, 2)),
-            'color': (0, 255, 150)
+            'color': (0, 255, 150),
+            'state': {
+                'color_state': 0,
+            }
         }
 
         self.grid[3:grid_width - 3, grid_height - 3:grid_height] = 8 # bottom wall
@@ -114,7 +131,10 @@ class Game:
             'pos': (math.floor(grid_width / 2), grid_height - 2),
             'shape': (math.floor(grid_width / 2), 1),
             'hitbox': ((3, grid_height - 3), (grid_width - 4, grid_height - 1)),
-            'color': (0, 255, 150)
+            'color': (0, 255, 150),
+            'state': {
+                'color_state': 0,
+            }
         }
 
 
@@ -135,26 +155,82 @@ class Game:
                 'pos': brick_pos,
                 'shape': (self.brick_halfwidth, self.brick_halfheight),
                 'hitbox': ((brick_pos[0] - self.brick_halfwidth, brick_pos[1] - self.brick_halfheight), (brick_pos[0] + self.brick_halfwidth, brick_pos[1] + self.brick_halfheight)),
-                'color': (255, 255, 255)
+                'color': (255, 255, 255),
+                'state': {
+                    'never_hit': True,
+                },
             }
 
 
-    def del_brick(self, id):
+    def hit_brick(self, id):
 
         brick_id = id - 9
         brick_pos = self.brick_positions[brick_id]
+
+        if False:
+        #if self.elements[f'brick_{brick_id}']['state']['never_hit']: # first hit change color, the second destroy the brick
+
+            self.r[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
+
+            self.elements[f'brick_{brick_id}']['state']['never_hit'] = False
+
+            self.event_log.append({
+                'description': 'change_color',
+                'subject': id
+            })
+
+        else:
         
-        self.grid[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
-        self.r[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
-        self.g[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
-        self.b[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
-        
-        self.elements[f'brick_{brick_id}']['alive'] = False
+            self.grid[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
+            self.r[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
+            self.g[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
+            self.b[brick_pos[0] - self.brick_halfwidth:brick_pos[0] + self.brick_halfwidth + 1, brick_pos[1] - self.brick_halfheight:brick_pos[1] + self.brick_halfheight + 1] = 0
+            
+            self.elements[f'brick_{brick_id}']['alive'] = False
+            self.event_log.append({
+                'description': 'disappearance',
+                'subject': id
+            })
+            self.bricks_alive -= 1
+
+    def hit_wall(self, id):
+
+        match(id):
+
+            case 5: # wall_left
+                color_state = self.elements['wall_left']['state']['color_state'] + 1
+                if color_state == 3: color_state = 0
+                self.elements['wall_left']['state']['color_state'] = color_state
+
+                self.r[0:3, 3:grid_height - 3] = 100 * color_state
+
+            case 6: # wall_right
+                color_state = self.elements['wall_right']['state']['color_state'] + 1
+                if color_state == 3: color_state = 0
+                self.elements['wall_right']['state']['color_state'] = color_state
+
+                self.r[grid_width - 3:grid_width, 3:grid_height - 3] = 100 * color_state
+
+            case 7: # wall_top
+                color_state = self.elements['wall_top']['state']['color_state'] + 1
+                if color_state == 3: color_state = 0
+                self.elements['wall_top']['state']['color_state'] = color_state
+
+                self.r[3:grid_width - 3, 0:3] = 100 * color_state
+
+            case 8: # wall_bottom
+                color_state = self.elements['wall_bottom']['state']['color_state'] + 1
+                if color_state == 3: color_state = 0
+                self.elements['wall_bottom']['state']['color_state'] = color_state
+
+                self.r[3:grid_width - 3, grid_height - 3:grid_height] = 100 * color_state
+
+                self.bricks_alive = 0
+
         self.event_log.append({
-            'description': 'disappearance',
+            'description': 'change_color',
             'subject': id
         })
-        self.bricks_alive -= 1
 
 
     def init_paddle(self):
@@ -271,7 +347,10 @@ class Game:
                     'object': 1,
                 })
                 if collision_id >= 9:
-                    self.event_pending.append((self.del_brick, collision_id))
+                    self.event_pending.append((self.hit_brick, collision_id))
+                
+                elif collision_id >= 5:
+                    self.event_pending.append((self.hit_wall, collision_id))
 
         ######
 
@@ -460,6 +539,13 @@ while screen_running:
 
     # Refresh the display
     pygame.display.flip()
+
+frames.append({
+    'frame_id': frame_id,
+    'commands': [],
+    'elements': {},
+    'events': [{'description': 'game_end', 'subject': 0}]
+    })
 
 if save_log:
     

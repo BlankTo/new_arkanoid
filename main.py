@@ -9,7 +9,10 @@ from lib.evolutionary_algorithm import EvolutionaryAlgorithm
 
 log_file_name = None
 #log_file_name = 'arkanoid_log_17_10_2024_17_47_51.pkl'
-log_file_name = 'arkanoid_log_19_10_2024_19_28_17.pkl'
+#log_file_name = 'arkanoid_log_19_10_2024_19_28_17.pkl' # first two are base game
+#log_file_name = 'arkanoid_log_20_10_2024_15_42_56.pkl' # added game_end
+#log_file_name = 'arkanoid_log_20_10_2024_16_31_59.pkl' # added change_color
+log_file_name = 'arkanoid_log_20_10_2024_16_48_34.pkl' # added lose game if bottom hit
 
 if log_file_name is None: # use last saved
 
@@ -53,7 +56,8 @@ for frame in log:
         description = event['description']
         subject = event['subject']
 
-        if subject: # TODO implement NoElement Element and assign it to 0 id
+        #if subject: # TODO implement NoElement Element and assign it to 0 id
+        if True:
 
             if description not in event_pool.keys():
                 event_pool[description] = EventType(event_type_id, description)
@@ -71,6 +75,8 @@ print(element_pool)
 print('\n-------------------------------------\nevent pool:\n')
 print(event_pool)
 print('\n-------------------------------------')
+
+#exit(0)
 
 #for i in range(1000):
 #    print(events_per_frame[i])
