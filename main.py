@@ -9,7 +9,7 @@ from lib.evolutionary_algorithm import EvolutionaryAlgorithm
 
 log_file_name = None
 #log_file_name = 'arkanoid_log_17_10_2024_17_47_51.pkl'
-#log_file_name = 'arkanoid_log_19_10_2024_19_28_17.pkl'
+log_file_name = 'arkanoid_log_19_10_2024_19_28_17.pkl'
 
 if log_file_name is None: # use last saved
 
